@@ -1,0 +1,768 @@
+<title>SK Keong ROI Calculator</title>
+<style>
+  :root {
+    --ground: #F7F6F2;
+    --surface: #FFFFFF;
+    --surface-2: #F1F0EA;
+    --ink: #15211C;
+    --ink-soft: #4A574F;
+    --ink-faint: #7C877E;
+    --line: #E2E0D7;
+    --line-strong: #CFCDC2;
+    --accent: #0C7A5E;
+    --accent-soft: #E4F0EB;
+    --accent-ink: #075c46;
+    --amber: #B4791F;
+    --amber-soft: #F6ECD8;
+    --shadow: 0 1px 2px rgba(21,33,28,.05), 0 8px 24px rgba(21,33,28,.06);
+    --radius: 14px;
+    --radius-sm: 9px;
+    --maxw: 560px;
+  }
+  @media (prefers-color-scheme: dark) {
+    :root {
+      --ground: #0E1512; --surface: #16201C; --surface-2: #1D2823;
+      --ink: #E9EEEA; --ink-soft: #A6B1AA; --ink-faint: #778179;
+      --line: #263029; --line-strong: #34413A;
+      --accent: #35B995; --accent-soft: #13312A; --accent-ink: #6FE0BE;
+      --amber: #D9A94E; --amber-soft: #2C2415;
+      --shadow: 0 1px 2px rgba(0,0,0,.3), 0 8px 24px rgba(0,0,0,.35);
+    }
+  }
+  :root[data-theme="light"] {
+    --ground: #F7F6F2; --surface: #FFFFFF; --surface-2: #F1F0EA;
+    --ink: #15211C; --ink-soft: #4A574F; --ink-faint: #7C877E;
+    --line: #E2E0D7; --line-strong: #CFCDC2;
+    --accent: #0C7A5E; --accent-soft: #E4F0EB; --accent-ink: #075c46;
+    --amber: #B4791F; --amber-soft: #F6ECD8;
+    --shadow: 0 1px 2px rgba(21,33,28,.05), 0 8px 24px rgba(21,33,28,.06);
+  }
+  :root[data-theme="dark"] {
+    --ground: #0E1512; --surface: #16201C; --surface-2: #1D2823;
+    --ink: #E9EEEA; --ink-soft: #A6B1AA; --ink-faint: #778179;
+    --line: #263029; --line-strong: #34413A;
+    --accent: #35B995; --accent-soft: #13312A; --accent-ink: #6FE0BE;
+    --amber: #D9A94E; --amber-soft: #2C2415;
+    --shadow: 0 1px 2px rgba(0,0,0,.3), 0 8px 24px rgba(0,0,0,.35);
+  }
+
+  * { box-sizing: border-box; }
+  html { -webkit-text-size-adjust: 100%; }
+  body {
+    margin: 0; background: var(--ground); color: var(--ink);
+    font-family: system-ui, -apple-system, "Segoe UI", Roboto, sans-serif;
+    font-size: 16px; line-height: 1.5; -webkit-font-smoothing: antialiased;
+  }
+  .wrap { max-width: var(--maxw); margin: 0 auto; padding: 0 16px 96px; }
+  .tnum { font-variant-numeric: tabular-nums; }
+
+  header {
+    position: sticky; top: 0; z-index: 20;
+    background: color-mix(in srgb, var(--ground) 88%, transparent);
+    backdrop-filter: saturate(1.4) blur(10px);
+    border-bottom: 1px solid var(--line);
+  }
+  .head-inner { max-width: var(--maxw); margin: 0 auto; padding: 12px 16px; display: flex; align-items: center; gap: 12px; }
+  .brand { display: flex; flex-direction: column; gap: 1px; min-width: 0; }
+  .brand .eyebrow { font-size: 11px; letter-spacing: .14em; text-transform: uppercase; color: var(--accent); font-weight: 600; }
+  .brand h1 { margin: 0; font-size: 16px; font-weight: 650; letter-spacing: -.01em; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
+  .head-actions { margin-left: auto; display: flex; gap: 6px; }
+  .icon-btn {
+    appearance: none; border: 1px solid var(--line-strong); background: var(--surface);
+    color: var(--ink-soft); border-radius: 8px; height: 34px; padding: 0 10px;
+    font-size: 12px; font-weight: 600; cursor: pointer; display: inline-flex; align-items: center; gap: 6px;
+  }
+  .icon-btn:active { transform: translateY(1px); }
+  .icon-btn.primary { background: var(--accent); border-color: var(--accent); color: #fff; }
+  :root[data-theme="dark"] .icon-btn.primary { color: #08110D; }
+  @media (prefers-color-scheme: dark) { .icon-btn.primary { color: #08110D; } }
+
+  .note { margin: 14px 0 4px; font-size: 12.5px; line-height: 1.5; color: var(--ink-faint); }
+
+  .scenario {
+    display: grid; grid-template-columns: repeat(3,1fr); gap: 4px;
+    background: var(--surface-2); border: 1px solid var(--line); border-radius: 12px;
+    padding: 4px; margin: 14px 0 18px; position: sticky; top: 60px; z-index: 15;
+  }
+  .scenario button {
+    appearance: none; border: 0; background: transparent; color: var(--ink-soft);
+    font-family: inherit; font-size: 13px; font-weight: 600; letter-spacing: .01em;
+    padding: 9px 4px; border-radius: 9px; cursor: pointer; transition: color .15s;
+  }
+  .scenario button .sub { display: block; font-size: 10.5px; font-weight: 500; color: var(--ink-faint); letter-spacing: .02em; margin-top: 1px; }
+  .scenario button[aria-selected="true"] { background: var(--surface); color: var(--ink); box-shadow: var(--shadow); }
+  .scenario button[aria-selected="true"] .sub { color: var(--accent); }
+
+  .headline { background: var(--surface); border: 1px solid var(--line); border-radius: var(--radius); box-shadow: var(--shadow); overflow: hidden; }
+  .headline-top { padding: 20px 20px 18px; border-bottom: 1px solid var(--line); }
+  .headline-top .label { font-size: 11.5px; letter-spacing: .1em; text-transform: uppercase; color: var(--ink-faint); font-weight: 600; }
+  .headline-top .big { font-size: 40px; font-weight: 680; letter-spacing: -.02em; line-height: 1.05; margin-top: 6px; }
+  .headline-top .big .cur { font-size: 20px; font-weight: 600; color: var(--ink-soft); margin-right: 4px; letter-spacing: 0; }
+  .headline-top .sub { font-size: 12.5px; color: var(--ink-faint); margin-top: 6px; }
+
+  .kpis { display: grid; grid-template-columns: 1fr 1fr; }
+  .kpi { padding: 14px 20px; }
+  .kpi + .kpi { border-left: 1px solid var(--line); }
+  .kpi .label { font-size: 11px; letter-spacing: .06em; text-transform: uppercase; color: var(--ink-faint); font-weight: 600; }
+  .kpi .val { font-size: 22px; font-weight: 660; letter-spacing: -.01em; margin-top: 3px; }
+  .kpi .val small { font-size: 13px; font-weight: 600; color: var(--ink-soft); }
+  .pill { display: inline-block; font-size: 11px; font-weight: 650; padding: 2px 8px; border-radius: 999px; margin-top: 6px; }
+  .pill.good { background: var(--accent-soft); color: var(--accent-ink); }
+  .pill.amber { background: var(--amber-soft); color: var(--amber); }
+
+  .split { display: grid; grid-template-columns: 1fr 1fr; gap: 1px; background: var(--line); border-top: 1px solid var(--line); }
+  .split .cell { background: var(--surface); padding: 13px 20px; }
+  .split .cell .label { font-size: 11px; letter-spacing: .05em; text-transform: uppercase; color: var(--ink-faint); font-weight: 600; }
+  .split .cell .val { font-size: 17px; font-weight: 620; margin-top: 2px; }
+
+  section { margin-top: 22px; }
+  .sec-head {
+    display: flex; align-items: baseline; gap: 8px; width: 100%;
+    background: transparent; border: 0; padding: 0 4px 10px; cursor: pointer;
+    color: var(--ink); font-family: inherit; text-align: left;
+  }
+  .sec-head h2 { margin: 0; font-size: 12px; letter-spacing: .12em; text-transform: uppercase; font-weight: 680; color: var(--ink); }
+  .sec-head .hint { font-size: 11.5px; color: var(--ink-faint); margin-left: auto; font-weight: 500; }
+  .sec-head .chev { transition: transform .2s; color: var(--ink-faint); font-size: 12px; }
+  .sec-head[aria-expanded="false"] .chev { transform: rotate(-90deg); }
+
+  .card { background: var(--surface); border: 1px solid var(--line); border-radius: var(--radius); box-shadow: var(--shadow); overflow: hidden; }
+  .group-label { font-size: 10.5px; letter-spacing: .09em; text-transform: uppercase; color: var(--accent); font-weight: 700; padding: 12px 16px 2px; background: var(--surface); }
+  .group-label.tight { border-top: 1px solid var(--line); }
+  .field { display: flex; align-items: center; gap: 12px; padding: 11px 16px; }
+  .field + .field { border-top: 1px solid var(--line); }
+  .field label { flex: 1; font-size: 14px; color: var(--ink-soft); line-height: 1.3; }
+  .field label .meta { display: block; font-size: 11px; color: var(--ink-faint); margin-top: 1px; }
+  .input-shell {
+    display: inline-flex; align-items: center; gap: 4px;
+    background: var(--surface-2); border: 1px solid var(--line-strong); border-radius: var(--radius-sm);
+    padding: 0 10px; height: 42px; min-width: 128px; transition: border-color .15s, box-shadow .15s;
+  }
+  .input-shell:focus-within { border-color: var(--accent); box-shadow: 0 0 0 3px var(--accent-soft); }
+  .input-shell .aff { font-size: 12.5px; color: var(--ink-faint); font-weight: 600; }
+  .input-shell input {
+    border: 0; background: transparent; color: var(--ink); font-family: inherit;
+    font-size: 15px; font-weight: 600; text-align: right; width: 100%; min-width: 0; padding: 0;
+    font-variant-numeric: tabular-nums; outline: none; -moz-appearance: textfield;
+  }
+  .input-shell input::-webkit-outer-spin-button, .input-shell input::-webkit-inner-spin-button { -webkit-appearance: none; margin: 0; }
+
+  .breakdown .row { display: flex; align-items: baseline; gap: 10px; padding: 10px 16px; font-size: 14px; }
+  .breakdown .row + .row { border-top: 1px solid var(--line); }
+  .breakdown .row .name { color: var(--ink-soft); }
+  .breakdown .row .name.indent { padding-left: 14px; color: var(--ink-faint); font-size: 13px; }
+  .breakdown .row .amt { margin-left: auto; font-weight: 620; font-variant-numeric: tabular-nums; }
+  .breakdown .row.subtotal { background: var(--surface-2); }
+  .breakdown .row.subtotal .name { font-weight: 680; color: var(--ink); font-size: 12px; letter-spacing: .04em; text-transform: uppercase; }
+  .breakdown .row.subtotal .amt { color: var(--accent); }
+  .breakdown .row.grand .amt { font-size: 16px; }
+  .tag { font-size: 10px; font-weight: 700; letter-spacing: .05em; text-transform: uppercase; padding: 1px 6px; border-radius: 5px; background: var(--surface-2); color: var(--ink-faint); border: 1px solid var(--line); white-space: nowrap; }
+  .tag.once { color: var(--amber); border-color: color-mix(in srgb, var(--amber) 30%, var(--line)); }
+  .tag.yr { color: var(--accent); border-color: color-mix(in srgb, var(--accent) 30%, var(--line)); }
+
+  footer { margin-top: 26px; padding: 0 4px; }
+  footer ul { margin: 0; padding-left: 18px; }
+  footer li { font-size: 12px; color: var(--ink-faint); line-height: 1.6; margin-bottom: 2px; }
+
+  .collapsed { display: none; }
+
+  /* Modal */
+  .modal-overlay {
+    position: fixed; inset: 0; z-index: 40; background: rgba(10,16,13,.55);
+    display: flex; align-items: flex-end; justify-content: center; padding: 0;
+  }
+  @media (min-width: 600px) { .modal-overlay { align-items: center; padding: 20px; } }
+  .modal-overlay[hidden] { display: none; }
+  .modal {
+    background: var(--surface); width: 100%; max-width: var(--maxw);
+    border-radius: 16px 16px 0 0; box-shadow: 0 -8px 40px rgba(0,0,0,.3);
+    max-height: 88vh; display: flex; flex-direction: column; overflow: hidden;
+  }
+  @media (min-width: 600px) { .modal { border-radius: 16px; } }
+  .modal-head { display: flex; align-items: center; gap: 10px; padding: 16px 18px 12px; border-bottom: 1px solid var(--line); }
+  .modal-head h3 { margin: 0; font-size: 15px; font-weight: 680; }
+  .modal-head .x { margin-left: auto; appearance: none; border: 0; background: var(--surface-2); color: var(--ink-soft); width: 30px; height: 30px; border-radius: 8px; font-size: 18px; cursor: pointer; line-height: 1; }
+  .summary {
+    margin: 0; padding: 16px 18px; overflow: auto; flex: 1;
+    font-family: ui-monospace, "SF Mono", "Cascadia Code", Menlo, Consolas, monospace;
+    font-size: 12px; line-height: 1.55; color: var(--ink); white-space: pre;
+    font-variant-numeric: tabular-nums;
+  }
+  .modal-actions { display: flex; gap: 8px; padding: 12px 18px calc(12px + env(safe-area-inset-bottom)); border-top: 1px solid var(--line); }
+  .modal-actions button {
+    flex: 1; appearance: none; border: 1px solid var(--line-strong); background: var(--surface);
+    color: var(--ink); font-family: inherit; font-size: 13px; font-weight: 650; padding: 11px 8px;
+    border-radius: 10px; cursor: pointer;
+  }
+  .modal-actions button.primary { background: var(--accent); border-color: var(--accent); color: #fff; }
+  @media (prefers-color-scheme: dark) { .modal-actions button.primary { color: #08110D; } }
+  :root[data-theme="dark"] .modal-actions button.primary { color: #08110D; }
+  .toast {
+    position: fixed; left: 50%; bottom: 24px; transform: translateX(-50%) translateY(20px);
+    background: var(--ink); color: var(--ground); font-size: 13px; font-weight: 600;
+    padding: 10px 16px; border-radius: 10px; opacity: 0; transition: opacity .2s, transform .2s; z-index: 60; pointer-events: none;
+  }
+  .toast.show { opacity: 1; transform: translateX(-50%) translateY(0); }
+
+  /* Print / PDF readout */
+  #printArea { display: none; }
+  @media print {
+    @page { margin: 16mm; }
+    body { background: #fff; }
+    body > *:not(#printArea) { display: none !important; }
+    #printArea { display: block !important; color: #15211C; font-family: system-ui, sans-serif; }
+    #printArea .p-eyebrow { font-size: 11px; letter-spacing: .16em; text-transform: uppercase; color: #0C7A5E; font-weight: 700; }
+    #printArea h1 { font-size: 22px; margin: 2px 0 2px; }
+    #printArea .p-meta { font-size: 12px; color: #6b756d; margin-bottom: 18px; }
+    #printArea h2 { font-size: 12px; letter-spacing: .1em; text-transform: uppercase; color: #15211C; border-bottom: 2px solid #15211C; padding-bottom: 4px; margin: 20px 0 8px; }
+    #printArea table { width: 100%; border-collapse: collapse; font-size: 12px; font-variant-numeric: tabular-nums; }
+    #printArea th, #printArea td { padding: 5px 8px; text-align: right; border-bottom: 1px solid #e2e0d7; }
+    #printArea th:first-child, #printArea td:first-child { text-align: left; }
+    #printArea thead th { border-bottom: 1.5px solid #cfcdc2; color: #4A574F; font-size: 11px; text-transform: uppercase; letter-spacing: .03em; }
+    #printArea tr.total td { font-weight: 700; border-top: 1.5px solid #15211C; border-bottom: none; }
+    #printArea tr.total td:not(:first-child) { color: #0C7A5E; }
+    #printArea .p-foot { margin-top: 22px; font-size: 10.5px; color: #6b756d; line-height: 1.6; }
+  }
+</style>
+
+<header>
+  <div class="head-inner">
+    <div class="brand">
+      <span class="eyebrow">SK Keong Trading</span>
+      <h1>ROI Calculator</h1>
+    </div>
+    <div class="head-actions">
+      <button class="icon-btn primary" id="shareBtn" type="button">Share</button>
+      <button class="icon-btn" id="themeBtn" type="button" aria-label="Toggle theme">Theme</button>
+      <button class="icon-btn" id="resetBtn" type="button">Reset</button>
+    </div>
+  </div>
+</header>
+
+<div class="wrap">
+  <p class="note" id="revNote"></p>
+
+  <div class="scenario" role="tablist" aria-label="Scenario">
+    <button role="tab" data-s="0" type="button">Conservative<span class="sub"></span></button>
+    <button role="tab" data-s="1" type="button">Base<span class="sub"></span></button>
+    <button role="tab" data-s="2" type="button">Upside<span class="sub"></span></button>
+  </div>
+
+  <div class="headline">
+    <div class="headline-top">
+      <div class="label">First-year cash impact</div>
+      <div class="big tnum" id="hFirstYear"></div>
+      <div class="sub" id="hScenarioName"></div>
+    </div>
+    <div class="kpis">
+      <div class="kpi">
+        <div class="label">First-year ROI</div>
+        <div class="val tnum" id="hRoi"></div>
+        <span class="pill good" id="hRoiPill"></span>
+      </div>
+      <div class="kpi">
+        <div class="label">Payback</div>
+        <div class="val tnum" id="hPayback"></div>
+        <span class="pill amber">from recurring benefit</span>
+      </div>
+    </div>
+    <div class="split">
+      <div class="cell">
+        <div class="label">One-time cash released</div>
+        <div class="val tnum" id="hOneTime"></div>
+      </div>
+      <div class="cell">
+        <div class="label">Recurring benefit / yr</div>
+        <div class="val tnum" id="hRecurring"></div>
+      </div>
+    </div>
+  </div>
+
+  <section>
+    <button class="sec-head" type="button" aria-expanded="true" data-target="secBiz">
+      <h2>Business inputs</h2><span class="hint">known + estimated</span><span class="chev">▾</span>
+    </button>
+    <div class="card" id="secBiz"></div>
+  </section>
+
+  <section>
+    <button class="sec-head" type="button" aria-expanded="true" data-target="secLever">
+      <h2>Lever assumptions</h2><span class="hint" id="leverHint"></span><span class="chev">▾</span>
+    </button>
+    <div class="card" id="secLever"></div>
+  </section>
+
+  <section>
+    <button class="sec-head" type="button" aria-expanded="true" data-target="secBreak">
+      <h2>Result breakdown</h2><span class="hint" id="breakHint"></span><span class="chev">▾</span>
+    </button>
+    <div class="card breakdown" id="secBreak"></div>
+  </section>
+
+  <section>
+    <button class="sec-head" type="button" aria-expanded="true" data-target="secCost">
+      <h2>Cost &amp; ROI</h2><span class="chev">▾</span>
+    </button>
+    <div class="card" id="secCost"></div>
+  </section>
+
+  <footer>
+    <ul>
+      <li>Only Annual Revenue is a known figure. Every other input is an assumption — replace with real numbers as they are validated.</li>
+      <li><strong>One-time</strong> = working capital released once (lower active stock, dead-stock liquidation, faster collections). <strong>Recurring</strong> = benefit every year.</li>
+      <li>Inventory reduction applies to <strong>active stock</strong> (inventory minus dead stock); dead stock is liquidated separately at a recovery rate.</li>
+      <li>AR cash released is capped at your AR balance; DSO reduction is shown against your current DSO for a reality check.</li>
+      <li>Figures are illustrative until validated with SK Keong data.</li>
+    </ul>
+  </footer>
+</div>
+
+<!-- Share modal -->
+<div class="modal-overlay" id="modal" hidden>
+  <div class="modal" role="dialog" aria-modal="true" aria-label="Pilot readout summary">
+    <div class="modal-head">
+      <h3>Pilot readout</h3>
+      <button class="x" id="modalClose" type="button" aria-label="Close">×</button>
+    </div>
+    <pre class="summary" id="summaryText"></pre>
+    <div class="modal-actions">
+      <button id="copyBtn" type="button">Copy text</button>
+      <button id="nativeShareBtn" type="button" hidden>Share…</button>
+      <button id="pdfBtn" class="primary" type="button">Save as PDF</button>
+    </div>
+  </div>
+</div>
+
+<div class="toast" id="toast"></div>
+<div id="printArea"></div>
+
+<script>
+(function () {
+  "use strict";
+
+  var SCEN = ["Conservative", "Base", "Upside"];
+
+  var DEFAULTS = {
+    biz: { revenue: 13000000, grossMargin: 12, inventory: 1800000, ar: 1800000, deadStock: 300000, badDebt: 90000, carryingCost: 22 },
+    levers: {
+      stockoutPct:        [3, 4, 6],
+      recoveredPct:       [40, 50, 60],
+      invReductionPct:    [6, 10, 14],
+      deadStockClearedPct:[40, 60, 80],
+      deadStockRecovPct:  [50, 60, 70],
+      dsoDays:            [5, 8, 12],
+      badDebtRedPct:      [30, 40, 50],
+      adminSaved:         [10000, 20000, 30000]
+    },
+    annualCost: 6000
+  };
+
+  var BIZ_FIELDS = [
+    { key: "revenue",      label: "Annual revenue",          aff: "RM", meta: "known figure" },
+    { key: "grossMargin",  label: "Gross margin",            aff: "%",  pct: true },
+    { key: "inventory",    label: "Inventory on hand",       aff: "RM" },
+    { key: "deadStock",    label: "Dead / slow stock",       aff: "RM", meta: "subset of inventory, liquidated separately" },
+    { key: "ar",           label: "Accounts receivable",     aff: "RM", metaId: "meta_ar" },
+    { key: "badDebt",      label: "Bad debt per year",       aff: "RM" },
+    { key: "carryingCost", label: "Inventory carrying cost", aff: "%",  pct: true, meta: "per year" }
+  ];
+
+  var LEVER_FIELDS = [
+    { group: "Sales recovery" },
+    { key: "stockoutPct",      label: "Stock-outs as % of sales",       aff: "%", pct: true },
+    { key: "recoveredPct",     label: "% of stock-out sales recovered", aff: "%", pct: true },
+    { group: "Inventory & dead stock" },
+    { key: "invReductionPct",  label: "Active inventory reduction",     aff: "%", pct: true },
+    { key: "deadStockClearedPct", label: "Dead stock liquidated",       aff: "%", pct: true },
+    { key: "deadStockRecovPct",   label: "Cash recovered on liquidation", aff: "%", pct: true, meta: "cents on the ringgit" },
+    { group: "Collections & admin" },
+    { key: "dsoDays",          label: "DSO days reduced",               aff: "days", pct: false, integer: true, metaId: "meta_dso" },
+    { key: "badDebtRedPct",    label: "Bad-debt reduction",             aff: "%", pct: true },
+    { key: "adminSaved",       label: "Admin time saved",               aff: "RM", meta: "per year" }
+  ];
+
+  var KEY = "skkeong_roi_v2";
+  var state = load();
+  var active = 0;
+
+  function load() {
+    try {
+      var raw = localStorage.getItem(KEY);
+      if (raw) {
+        var p = JSON.parse(raw);
+        return {
+          biz: Object.assign({}, DEFAULTS.biz, p.biz),
+          levers: mergeLevers(p.levers),
+          annualCost: typeof p.annualCost === "number" ? p.annualCost : DEFAULTS.annualCost
+        };
+      }
+    } catch (e) {}
+    return clone(DEFAULTS);
+  }
+  function mergeLevers(pl) {
+    var out = {};
+    Object.keys(DEFAULTS.levers).forEach(function (k) {
+      out[k] = (pl && Array.isArray(pl[k]) && pl[k].length === 3) ? pl[k].slice() : DEFAULTS.levers[k].slice();
+    });
+    return out;
+  }
+  function clone(o) { return JSON.parse(JSON.stringify(o)); }
+  function save() { try { localStorage.setItem(KEY, JSON.stringify(state)); } catch (e) {} }
+
+  function fmtRM(n) { return isFinite(n) ? Math.round(n).toLocaleString("en-MY") : "—"; }
+  function fmtRMc(n) { return "RM " + fmtRM(n); }
+  function fmtRoi(r) { return isFinite(r) ? (r >= 10 ? Math.round(r) : r.toFixed(1)) + "×" : "—"; }
+  function fmtWk(w) { return isFinite(w) ? w.toFixed(1) + " wk" : "—"; }
+
+  function compute(s) {
+    var b = state.biz, L = state.levers;
+    var gm = b.grossMargin / 100, carry = b.carryingCost / 100;
+    var activeInv = Math.max(b.inventory - b.deadStock, 0);
+
+    var lostSales     = b.revenue * (L.stockoutPct[s] / 100);
+    var salesRecov    = lostSales * (L.recoveredPct[s] / 100);
+    var marginRecov   = salesRecov * gm;
+
+    var invReleased   = activeInv * (L.invReductionPct[s] / 100);
+    var carryingSaved = invReleased * carry;
+
+    var deadCleared   = b.deadStock * (L.deadStockClearedPct[s] / 100);
+    var deadCash      = deadCleared * (L.deadStockRecovPct[s] / 100);
+    var deadCarrySaved= deadCleared * carry;
+
+    var revPerDay     = b.revenue / 365;
+    var currentDSO    = revPerDay > 0 ? b.ar / revPerDay : 0;
+    var arReleased    = Math.min(revPerDay * L.dsoDays[s], b.ar);
+
+    var badDebtSaved  = b.badDebt * (L.badDebtRedPct[s] / 100);
+    var adminSaved    = L.adminSaved[s];
+
+    var oneTime   = invReleased + arReleased + deadCash;
+    var recurring = marginRecov + carryingSaved + badDebtSaved + adminSaved + deadCarrySaved;
+    var firstYear = oneTime + recurring;
+
+    var cost = state.annualCost;
+    var roi = cost === 0 ? Infinity : firstYear / cost;
+    var payback = recurring === 0 ? Infinity : cost / (recurring / 52);
+
+    return {
+      lostSales: lostSales, salesRecov: salesRecov, marginRecov: marginRecov,
+      invReleased: invReleased, carryingSaved: carryingSaved,
+      deadCash: deadCash, deadCarrySaved: deadCarrySaved,
+      arReleased: arReleased, currentDSO: currentDSO,
+      badDebtSaved: badDebtSaved, adminSaved: adminSaved,
+      oneTime: oneTime, recurring: recurring, firstYear: firstYear, roi: roi, payback: payback
+    };
+  }
+
+  function makeField(f, value, onInput) {
+    var row = document.createElement("div");
+    row.className = "field";
+    var lab = document.createElement("label");
+    var metaHtml = "";
+    if (f.metaId) metaHtml = '<span class="meta" id="' + f.metaId + '"></span>';
+    else if (f.meta) metaHtml = '<span class="meta">' + f.meta + "</span>";
+    lab.innerHTML = f.label + metaHtml;
+    var shell = document.createElement("div");
+    shell.className = "input-shell";
+    var pre = (f.aff === "RM");
+    var aff = document.createElement("span");
+    aff.className = "aff"; aff.textContent = f.aff;
+    var inp = document.createElement("input");
+    inp.type = "text"; inp.inputMode = "decimal"; inp.value = String(value);
+    inp.setAttribute("aria-label", f.label);
+    inp.addEventListener("input", function () {
+      var v = parseFloat(inp.value.replace(/[, ]/g, ""));
+      if (isNaN(v)) v = 0;
+      if (f.integer) v = Math.round(v);
+      onInput(v);
+    });
+    inp.addEventListener("focus", function () { inp.select(); });
+    var id = "f_" + (f.key || Math.random());
+    lab.setAttribute("for", id); inp.id = id;
+    if (pre) { shell.appendChild(aff); shell.appendChild(inp); }
+    else { shell.appendChild(inp); shell.appendChild(aff); }
+    row.appendChild(lab); row.appendChild(shell);
+    return row;
+  }
+
+  function renderBiz() {
+    var host = document.getElementById("secBiz");
+    host.innerHTML = "";
+    BIZ_FIELDS.forEach(function (f) {
+      host.appendChild(makeField(f, state.biz[f.key], function (v) {
+        state.biz[f.key] = v; save(); renderResults();
+      }));
+    });
+  }
+
+  function renderLevers() {
+    var host = document.getElementById("secLever");
+    host.innerHTML = "";
+    document.getElementById("leverHint").textContent = SCEN[active] + " scenario";
+    LEVER_FIELDS.forEach(function (f, i) {
+      if (f.group) {
+        var g = document.createElement("div");
+        g.className = "group-label" + (i > 0 ? " tight" : "");
+        g.textContent = f.group;
+        host.appendChild(g);
+        return;
+      }
+      host.appendChild(makeField(f, state.levers[f.key][active], function (v) {
+        state.levers[f.key][active] = v; save(); renderResults(); renderScenarioSubs();
+      }));
+    });
+  }
+
+  function renderResults() {
+    var r = compute(active);
+
+    document.getElementById("hFirstYear").innerHTML = '<span class="cur">RM</span>' + fmtRM(r.firstYear);
+    document.getElementById("hScenarioName").textContent =
+      SCEN[active] + " scenario · one-time RM " + fmtRM(r.oneTime) + " + recurring RM " + fmtRM(r.recurring) + "/yr";
+
+    var roiEl = document.getElementById("hRoi"), roiPill = document.getElementById("hRoiPill");
+    if (isFinite(r.roi)) {
+      roiEl.innerHTML = (r.roi >= 10 ? Math.round(r.roi) : r.roi.toFixed(1)) + '<small>×</small>';
+      roiPill.textContent = Math.round(r.roi * 100).toLocaleString("en-MY") + "% return";
+    } else { roiEl.textContent = "—"; roiPill.textContent = "set a cost"; }
+
+    var payEl = document.getElementById("hPayback");
+    payEl.innerHTML = isFinite(r.payback) ? (r.payback.toFixed(1) + '<small> wk</small>') : "—";
+
+    document.getElementById("hOneTime").textContent = fmtRMc(r.oneTime);
+    document.getElementById("hRecurring").textContent = fmtRMc(r.recurring);
+
+    // Derived current-DSO context (AR balance wired in)
+    var dsoTxt = "≈ " + Math.round(r.currentDSO) + " days DSO today";
+    var mAr = document.getElementById("meta_ar"); if (mAr) mAr.textContent = dsoTxt;
+    var mDso = document.getElementById("meta_dso"); if (mDso) mDso.textContent = "of " + dsoTxt.replace("≈ ", "≈").replace(" DSO today", " current DSO");
+
+    renderBreakdown(r);
+    renderScenarioSubs();
+    renderPrintArea();
+  }
+
+  function bRow(name, amt, opts) {
+    opts = opts || {};
+    var row = document.createElement("div");
+    row.className = "row" + (opts.subtotal ? " subtotal" : "") + (opts.grand ? " grand" : "");
+    var n = document.createElement("span");
+    n.className = "name" + (opts.indent ? " indent" : ""); n.textContent = name;
+    row.appendChild(n);
+    if (opts.tag) {
+      var t = document.createElement("span"); t.className = "tag " + opts.tag;
+      t.textContent = opts.tag === "once" ? "one-time" : "per yr"; row.appendChild(t);
+    }
+    var a = document.createElement("span"); a.className = "amt"; a.textContent = fmtRMc(amt);
+    row.appendChild(a);
+    return row;
+  }
+
+  function renderBreakdown(r) {
+    var host = document.getElementById("secBreak");
+    host.innerHTML = "";
+    document.getElementById("breakHint").textContent = SCEN[active];
+    host.appendChild(bRow("Lost sales to stock-outs", r.lostSales, {}));
+    host.appendChild(bRow("Sales recovered", r.salesRecov, {}));
+    host.appendChild(bRow("Margin on recovered sales", r.marginRecov, { indent: true, tag: "yr" }));
+    host.appendChild(bRow("Active inventory cash released", r.invReleased, { tag: "once" }));
+    host.appendChild(bRow("Carrying cost saved", r.carryingSaved, { tag: "yr" }));
+    host.appendChild(bRow("Dead stock liquidated — cash", r.deadCash, { tag: "once" }));
+    host.appendChild(bRow("Dead stock carrying saved", r.deadCarrySaved, { tag: "yr" }));
+    host.appendChild(bRow("AR cash released", r.arReleased, { tag: "once" }));
+    host.appendChild(bRow("Bad debt saved", r.badDebtSaved, { tag: "yr" }));
+    host.appendChild(bRow("Admin time saved", r.adminSaved, { tag: "yr" }));
+    host.appendChild(bRow("One-time cash released", r.oneTime, { subtotal: true }));
+    host.appendChild(bRow("Recurring hard benefit / yr", r.recurring, { subtotal: true }));
+    host.appendChild(bRow("First-year cash impact", r.firstYear, { subtotal: true, grand: true }));
+  }
+
+  function renderCost() {
+    var host = document.getElementById("secCost");
+    host.innerHTML = "";
+    host.appendChild(makeField(
+      { key: "annualCost", label: "Estimated annual cost", aff: "RM", meta: "Claude + tooling, per year" },
+      state.annualCost,
+      function (v) { state.annualCost = v; save(); renderResults(); }
+    ));
+  }
+
+  function renderScenarioSubs() {
+    document.querySelectorAll(".scenario button").forEach(function (btn) {
+      var s = parseInt(btn.getAttribute("data-s"), 10);
+      btn.querySelector(".sub").textContent = "RM " + fmtRM(compute(s).firstYear);
+      btn.setAttribute("aria-selected", s === active ? "true" : "false");
+    });
+  }
+
+  function renderRevNote() {
+    document.getElementById("revNote").textContent =
+      "Edit any figure — everything recalculates live and saves to this device. Compare scenarios with the tabs, then Share for a pilot readout.";
+  }
+
+  // ---------- Share / export ----------
+  function todayStr() {
+    var d = new Date();
+    return d.toLocaleDateString("en-GB", { day: "2-digit", month: "short", year: "numeric" });
+  }
+  function padR(s, n) { s = String(s); return s.length >= n ? s : s + " ".repeat(n - s.length); }
+  function padL(s, n) { s = String(s); return s.length >= n ? s : " ".repeat(n - s.length) + s; }
+
+  function buildSummaryText() {
+    var b = state.biz;
+    var R = [compute(0), compute(1), compute(2)];
+    var W = 14; // scenario column width
+    function row(label, vals) {
+      return padR(label, 30) + vals.map(function (v) { return padL(v, W); }).join("");
+    }
+    var lines = [];
+    lines.push("SK KEONG TRADING — ROI PILOT READOUT");
+    lines.push("Generated " + todayStr());
+    lines.push("");
+    lines.push("BUSINESS INPUTS");
+    lines.push("  Annual revenue ............ RM " + fmtRM(b.revenue) + "   (known)");
+    lines.push("  Gross margin .............. " + b.grossMargin + "%");
+    lines.push("  Inventory on hand ......... RM " + fmtRM(b.inventory));
+    lines.push("  Dead / slow stock ......... RM " + fmtRM(b.deadStock));
+    lines.push("  Accounts receivable ....... RM " + fmtRM(b.ar) + "   (~" + Math.round(R[1].currentDSO) + " days DSO)");
+    lines.push("  Bad debt per year ......... RM " + fmtRM(b.badDebt));
+    lines.push("  Inventory carrying cost ... " + b.carryingCost + "% / yr");
+    lines.push("  Estimated annual cost ..... RM " + fmtRM(state.annualCost) + "   (Claude + tooling)");
+    lines.push("");
+    lines.push("RESULTS BY SCENARIO");
+    lines.push(row("", ["Conservative", "Base", "Upside"]));
+    lines.push(row("One-time cash released", R.map(function (r) { return fmtRM(r.oneTime); })));
+    lines.push(row("Recurring benefit / yr", R.map(function (r) { return fmtRM(r.recurring); })));
+    lines.push(row("First-year cash impact", R.map(function (r) { return fmtRM(r.firstYear); })));
+    lines.push(row("First-year ROI", R.map(function (r) { return fmtRoi(r.roi); })));
+    lines.push(row("Payback (weeks)", R.map(function (r) { return isFinite(r.payback) ? r.payback.toFixed(1) : "—"; })));
+    lines.push("");
+    lines.push("All figures in RM. One-time = working capital released once;");
+    lines.push("recurring = benefit every year. Assumptions until validated with");
+    lines.push("SK Keong data in the pilot.");
+    return lines.join("\n");
+  }
+
+  function renderPrintArea() {
+    var b = state.biz;
+    var R = [compute(0), compute(1), compute(2)];
+    function cells(vals) { return vals.map(function (v) { return "<td>" + v + "</td>"; }).join(""); }
+    var html = "";
+    html += '<div class="p-eyebrow">SK Keong Trading</div>';
+    html += "<h1>ROI Pilot Readout</h1>";
+    html += '<div class="p-meta">Generated ' + todayStr() + "</div>";
+
+    html += "<h2>Business inputs</h2><table><tbody>";
+    html += "<tr><td>Annual revenue (known)</td><td>RM " + fmtRM(b.revenue) + "</td></tr>";
+    html += "<tr><td>Gross margin</td><td>" + b.grossMargin + "%</td></tr>";
+    html += "<tr><td>Inventory on hand</td><td>RM " + fmtRM(b.inventory) + "</td></tr>";
+    html += "<tr><td>Dead / slow stock</td><td>RM " + fmtRM(b.deadStock) + "</td></tr>";
+    html += "<tr><td>Accounts receivable (~" + Math.round(R[1].currentDSO) + " days DSO)</td><td>RM " + fmtRM(b.ar) + "</td></tr>";
+    html += "<tr><td>Bad debt per year</td><td>RM " + fmtRM(b.badDebt) + "</td></tr>";
+    html += "<tr><td>Inventory carrying cost</td><td>" + b.carryingCost + "% / yr</td></tr>";
+    html += "<tr><td>Estimated annual cost (Claude + tooling)</td><td>RM " + fmtRM(state.annualCost) + "</td></tr>";
+    html += "</tbody></table>";
+
+    html += "<h2>Results by scenario</h2><table>";
+    html += "<thead><tr><th>Metric</th><th>Conservative</th><th>Base</th><th>Upside</th></tr></thead><tbody>";
+    html += "<tr><td>One-time cash released</td>" + cells(R.map(function (r) { return "RM " + fmtRM(r.oneTime); })) + "</tr>";
+    html += "<tr><td>Recurring benefit / yr</td>" + cells(R.map(function (r) { return "RM " + fmtRM(r.recurring); })) + "</tr>";
+    html += '<tr class="total"><td>First-year cash impact</td>' + cells(R.map(function (r) { return "RM " + fmtRM(r.firstYear); })) + "</tr>";
+    html += "<tr><td>First-year ROI</td>" + cells(R.map(function (r) { return fmtRoi(r.roi); })) + "</tr>";
+    html += "<tr><td>Payback (weeks)</td>" + cells(R.map(function (r) { return isFinite(r.payback) ? r.payback.toFixed(1) : "—"; })) + "</tr>";
+    html += "</tbody></table>";
+
+    html += '<div class="p-foot">All figures in RM. One-time = working capital released once (lower active stock, dead-stock liquidation, faster collections); recurring = benefit every year. Inventory reduction applies to active stock; dead stock is liquidated separately at a recovery rate. AR cash released is capped at the AR balance. Figures are illustrative until validated with SK Keong data in the pilot.</div>';
+
+    document.getElementById("printArea").innerHTML = html;
+  }
+
+  function toast(msg) {
+    var t = document.getElementById("toast");
+    t.textContent = msg; t.classList.add("show");
+    clearTimeout(t._h); t._h = setTimeout(function () { t.classList.remove("show"); }, 1800);
+  }
+
+  function openModal() {
+    document.getElementById("summaryText").textContent = buildSummaryText();
+    document.getElementById("modal").hidden = false;
+  }
+  function closeModal() { document.getElementById("modal").hidden = true; }
+
+  function copyText() {
+    var text = buildSummaryText();
+    function fallback() {
+      var ta = document.createElement("textarea");
+      ta.value = text; ta.style.position = "fixed"; ta.style.opacity = "0";
+      document.body.appendChild(ta); ta.select();
+      try { document.execCommand("copy"); toast("Copied to clipboard"); }
+      catch (e) { toast("Press and hold to copy"); }
+      document.body.removeChild(ta);
+    }
+    if (navigator.clipboard && navigator.clipboard.writeText) {
+      navigator.clipboard.writeText(text).then(function () { toast("Copied to clipboard"); }, fallback);
+    } else { fallback(); }
+  }
+
+  // ---------- Events ----------
+  document.querySelectorAll(".scenario button").forEach(function (btn) {
+    btn.addEventListener("click", function () {
+      active = parseInt(btn.getAttribute("data-s"), 10);
+      renderLevers(); renderResults();
+    });
+  });
+  document.querySelectorAll(".sec-head").forEach(function (h) {
+    h.addEventListener("click", function () {
+      var target = document.getElementById(h.getAttribute("data-target"));
+      var open = h.getAttribute("aria-expanded") === "true";
+      h.setAttribute("aria-expanded", open ? "false" : "true");
+      target.classList.toggle("collapsed", open);
+    });
+  });
+  document.getElementById("resetBtn").addEventListener("click", function () {
+    if (!confirm("Reset all inputs to the original estimates?")) return;
+    state = clone(DEFAULTS); active = 0; save();
+    renderBiz(); renderLevers(); renderCost(); renderResults();
+  });
+
+  document.getElementById("shareBtn").addEventListener("click", openModal);
+  document.getElementById("modalClose").addEventListener("click", closeModal);
+  document.getElementById("modal").addEventListener("click", function (e) {
+    if (e.target === this) closeModal();
+  });
+  document.getElementById("copyBtn").addEventListener("click", copyText);
+  document.getElementById("pdfBtn").addEventListener("click", function () {
+    renderPrintArea(); window.print();
+  });
+  (function initShare() {
+    if (navigator.share) {
+      var nb = document.getElementById("nativeShareBtn");
+      nb.hidden = false;
+      nb.addEventListener("click", function () {
+        navigator.share({ title: "SK Keong ROI Pilot Readout", text: buildSummaryText() }).catch(function () {});
+      });
+    }
+  })();
+
+  var THEME_KEY = "skkeong_roi_theme";
+  (function initTheme() {
+    var t = null; try { t = localStorage.getItem(THEME_KEY); } catch (e) {}
+    if (t) document.documentElement.setAttribute("data-theme", t);
+  })();
+  document.getElementById("themeBtn").addEventListener("click", function () {
+    var cur = document.documentElement.getAttribute("data-theme");
+    if (!cur) cur = matchMedia("(prefers-color-scheme: dark)").matches ? "dark" : "light";
+    var next = cur === "dark" ? "light" : "dark";
+    document.documentElement.setAttribute("data-theme", next);
+    try { localStorage.setItem(THEME_KEY, next); } catch (e) {}
+  });
+
+  // Init
+  renderRevNote();
+  renderBiz();
+  renderLevers();
+  renderCost();
+  renderResults();
+})();
+</script>
