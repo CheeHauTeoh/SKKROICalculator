@@ -2,15 +2,22 @@
   "name": "sk-keong-pricing-app",
   "version": "0.1.0",
   "private": true,
-  "description": "SK Keong Trading internal pricing & field-intelligence PWA (bilingual, offline-first)",
+  "description": "SK Keong Trading internal pricing & field-intelligence PWA (bilingual, offline-first) (npm dependencies are only used by the Netlify deployment; the local server needs none)",
   "type": "module",
-  "engines": { "node": ">=22.13" },
+  "engines": {
+    "node": ">=22.13"
+  },
   "scripts": {
     "start": "node --no-warnings=ExperimentalWarning server/index.js",
     "dev": "node --no-warnings=ExperimentalWarning --watch server/index.js",
     "seed": "node --no-warnings=ExperimentalWarning server/cli.js seed data/seed",
     "seed:sample": "node --no-warnings=ExperimentalWarning server/cli.js seed data/sample",
     "import:check": "node --no-warnings=ExperimentalWarning server/cli.js check",
-    "test": "node --no-warnings=ExperimentalWarning --test \"test/**/*.test.js\""
+    "test": "node --no-warnings=ExperimentalWarning --test \"test/**/*.test.js\"",
+    "build:netlify": "node scripts/prepare-netlify.mjs"
+  },
+  "dependencies": {
+    "@netlify/blobs": "^11.1.0",
+    "sql.js": "^1.14.2"
   }
 }

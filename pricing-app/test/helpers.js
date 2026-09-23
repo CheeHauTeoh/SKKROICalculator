@@ -23,7 +23,7 @@ export function addUser(db, username, role, salesperson_code = null, password = 
 }
 
 export async function startApp() {
-  const app = createApp({ dbPath: ':memory:' });
+  const app = await createApp({ dbPath: ':memory:' });
   seedSample(app.db);
   addUser(app.db, 'fin', 'finance');
   addUser(app.db, 'boss', 'owner');

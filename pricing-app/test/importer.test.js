@@ -15,8 +15,8 @@ test('header aliases and stripping of FY/currency decorations', () => {
   assert.equal(imp.guessKind(['bundle_id', 'customer_type', 'item_code', 'support_pct', 'lift']), 'bundles');
 });
 
-test('re-importing the same file twice changes nothing', () => {
-  const db = new Db(':memory:');
+test('re-importing the same file twice changes nothing', async () => {
+  const db = await Db.open(':memory:');
   const first = seedSample(db);
   assert.equal(first.products.summary.inserted, 67);
   assert.equal(first.products.summary.updated, 0);
@@ -31,8 +31,8 @@ test('re-importing the same file twice changes nothing', () => {
   assert.equal(db.get('SELECT COUNT(*) c FROM imports').c, 5);
 });
 
-test('import refreshes evidence but never overwrites human-entered fields', () => {
-  const db = new Db(':memory:');
+test('import refreshes evidence but never overwrites human-entered fields', async () => {
+  const db = await Db.open(':memory:');
   seedSample(db);
   db.run(`UPDATE products SET uom_purchase = 'CTN', uom_selling = 'PKT', uom_factor = 25, verified_unit_cost_sen = 487, target_margin_pct = 20, cost_updated_by = 'yunjun' WHERE item_code = '9.EC22'`);
   const edited = readSample('seed_products.csv').replace('9.EC22,"EC22A+LID",Disposables', '9.EC22,"EC22A + LID (new desc)",Disposables');
@@ -48,8 +48,8 @@ test('import refreshes evidence but never overwrites human-entered fields', () =
   assert.equal(p.implied_unit_cost_sen, 12180);
 });
 
-test('quality flag is computed when the file does not carry it', () => {
-  const db = new Db(':memory:');
+test('quality flag is computed when the file does not carry it', async () => {
+  const db = await Db.open(':memory:');
   const text = 'item_code,description,sales_qty,sales_value,purchase_qty,purchase_value\nA,ok,100,1000,100,700\nB,suspect,100,1000,10,700\nC,nopurchase,100,1000,,\n';
   imp.commit(db, { kind: 'products', text, who: 'test' });
   assert.equal(db.get(`SELECT cost_data_quality q FROM products WHERE item_code='A'`).q, 'OK');
@@ -58,15 +58,15 @@ test('quality flag is computed when the file does not carry it', () => {
   assert.equal(db.get(`SELECT implied_margin_pct m FROM products WHERE item_code='A'`).m, 30);
 });
 
-test('reconciliation total is the sum of the FY sales value column', () => {
-  const db = new Db(':memory:');
+test('reconciliation total is the sum of the FY sales value column', async () => {
+  const db = await Db.open(':memory:');
   seedSample(db);
   const chk = imp.check(db, { kind: 'products', text: readSample('seed_products.csv') });
   assert.equal(imp.reconcileTotal(db).total_sen, chk.totals.fy_sales_value_sen);
 });
 
-test('customers: tier from rules unless overridden; salesperson logins created', () => {
-  const db = new Db(':memory:');
+test('customers: tier from rules unless overridden; salesperson logins created', async () => {
+  const db = await Db.open(':memory:');
   db.run(`INSERT INTO tier_rules VALUES ('Hypermarket', '*', 'KEY'), ('*', 'S', 'SML')`);
   seedSample(db);
   const hyper = db.all(`SELECT price_tier FROM customers WHERE customer_type = 'Hypermarket'`);

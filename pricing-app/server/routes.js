@@ -9,6 +9,7 @@ import * as imp from './importer.js';
 import * as pricing from './pricing.js';
 import { divideSen, formatSen } from './money.js';
 import { toCsv } from './csv.js';
+import { resetBusinessData, seedFromTexts } from './seed.js';
 
 const ALL = ['salesperson', 'finance', 'owner'];
 const MGMT = ['finance', 'owner'];
@@ -310,6 +311,18 @@ export function buildRoutes() {
     ctx.db.run('UPDATE users SET display_name = ?, role = ?, salesperson_code = ?, active = ? WHERE id = ?', after.display_name, after.role, after.salesperson_code, after.active, u.id);
     if (b.password) { auth.changePassword(ctx.db, u.id, b.password); ctx.db.run('UPDATE users SET must_change_password = 1 WHERE id = ?', u.id); audit(ctx.db, { who: who(ctx), action: 'reset_password', entity: 'users', entityId: u.id }); }
     return ctx.db.get('SELECT id, username, display_name, role, salesperson_code, must_change_password, active FROM users WHERE id = ?', u.id);
+  });
+
+  // ---- owner: wipe business data (keeps logins and settings), optionally reload the sample ----
+  add('POST', '/api/admin/reset', OWNER, async ctx => {
+    const u = ctx.db.get('SELECT * FROM users WHERE id = ?', ctx.user.id);
+    if (!auth.verifyPassword(ctx.body?.password, u.password_hash)) throw err('invalid_credentials', 401);
+    if (ctx.body?.confirm !== 'RESET') throw err('confirm_required');
+    resetBusinessData(ctx.db);
+    let seeded = null;
+    if (ctx.body?.seed_sample && ctx.sampleTexts) seeded = seedFromTexts(ctx.db, await ctx.sampleTexts(), { who: who(ctx) });
+    audit(ctx.db, { who: who(ctx), action: 'reset_business_data', entity: 'db', entityId: '*', newValue: { seed_sample: !!ctx.body?.seed_sample } });
+    return { ok: true, seeded };
   });
 
   // ---- exports (management only; these contain cost) --------------------------------------

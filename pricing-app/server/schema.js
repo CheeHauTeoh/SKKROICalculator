@@ -1,3 +1,5 @@
+// Generated from the schema below; kept as a JS string so serverless bundlers can include it.
+export const SCHEMA = String.raw`
 -- SK Keong pricing app schema. All money columns are integer sen. All dates ISO-8601 text (UTC).
 PRAGMA foreign_keys = ON;
 
@@ -203,3 +205,4 @@ INSERT OR IGNORE INTO settings (key, value) VALUES
   ('default_price_tier', 'STD'),
   ('fy_label', 'FY2025'),
   ('default_floor_discount_pct', '5');
+`;

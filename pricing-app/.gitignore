@@ -2,3 +2,5 @@ data/*.sqlite
 data/*.sqlite-*
 data/seed/*.csv
 node_modules/
+netlify/functions/api/generated.js
+.netlify/
