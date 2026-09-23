@@ -1,0 +1,56 @@
+name: Deploy pricing app to Netlify
+
+# Uploads pricing-app/ to Netlify's build system, which runs `npm run build:netlify` and publishes
+# the site (static files from public/, the API as a serverless function).
+#
+# Two ways to authorise the upload:
+#   1. Repository secret NETLIFY_AUTH_TOKEN (a Netlify personal access token) + NETLIFY_SITE_ID:
+#      the workflow runs `netlify deploy --build --prod`. Use this for routine deploys.
+#   2. A one-off proxy path issued by the Netlify MCP connector (valid ~30 minutes), passed as the
+#      `proxy_path` input when triggering the workflow manually.
+
+on:
+  workflow_dispatch:
+    inputs:
+      proxy_path:
+        description: "One-off Netlify MCP proxy path (optional if NETLIFY_AUTH_TOKEN secret is set)"
+        required: false
+        type: string
+      site_id:
+        description: "Netlify site id"
+        required: false
+        default: "3569cecb-f13b-4be8-9a0d-8c3906832033"
+        type: string
+
+concurrency:
+  group: netlify-deploy
+  cancel-in-progress: false
+
+jobs:
+  deploy:
+    runs-on: ubuntu-latest
+    defaults:
+      run:
+        working-directory: pricing-app
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-node@v4
+        with:
+          node-version: 22
+      - name: Run tests
+        run: npm ci && npm test
+      - name: Deploy with personal access token
+        if: ${{ env.NETLIFY_AUTH_TOKEN != '' }}
+        env:
+          NETLIFY_AUTH_TOKEN: ${{ secrets.NETLIFY_AUTH_TOKEN }}
+          NETLIFY_SITE_ID: ${{ secrets.NETLIFY_SITE_ID || inputs.site_id }}
+        run: npx -y netlify-cli@latest deploy --build --prod --message "GitHub Actions ${{ github.sha }}"
+      - name: Deploy with one-off proxy path
+        if: ${{ env.NETLIFY_AUTH_TOKEN == '' && inputs.proxy_path != '' }}
+        env:
+          NETLIFY_AUTH_TOKEN: ${{ secrets.NETLIFY_AUTH_TOKEN }}
+          PROXY_PATH: ${{ inputs.proxy_path }}
+        run: npx -y @netlify/mcp@latest --site-id "${{ inputs.site_id }}" --proxy-path "$PROXY_PATH"
+      - name: Nothing to authorise with
+        if: ${{ env.NETLIFY_AUTH_TOKEN == '' && inputs.proxy_path == '' }}
+        run: echo "Set the NETLIFY_AUTH_TOKEN secret or pass proxy_path" && exit 1
