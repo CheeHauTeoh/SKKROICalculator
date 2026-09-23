@@ -33,7 +33,7 @@ export function buildRoutes() {
     return { user: r.user };
   });
   add('POST', '/api/auth/logout', ALL, ctx => { auth.logout(ctx.db, ctx.token); ctx.clearCookie(); return { ok: true }; });
-  add('GET', '/api/auth/me', ALL, ctx => ({ user: ctx.user, can_see_cost: ctx.canSeeCost }));
+  add('GET', '/api/auth/me', ALL, ctx => ({ user: ctx.user, pricing_visibility: ctx.canSeeCost ? 'full' : 'sales' }));
   add('POST', '/api/auth/change-password', ALL, ctx => {
     const u = ctx.db.get('SELECT * FROM users WHERE id = ?', ctx.user.id);
     if (!auth.verifyPassword(ctx.body.current_password, u.password_hash)) throw err('invalid_credentials', 401);

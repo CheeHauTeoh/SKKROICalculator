@@ -10,7 +10,7 @@ const EXPECTED_TOTAL_SEN = 2_752_185_900; // RM27,521,859 per DATA_SPEC section 
 
 // Files are imported in dependency order. Names are matched loosely (seed_products.csv, products.csv, ...).
 const ORDER = [
-  ['products', /product/i], ['customers', /customer(?!_product)/i], ['sales', /(customer_products|sales)/i],
+  ['products', /(?<!customer_)products?/i], ['customers', /customer(?!_product)/i], ['sales', /(customer_products|sales)/i],
   ['purchases', /purchase/i], ['bundles', /bundle/i], ['crosssell', /cross/i],
 ];
 
