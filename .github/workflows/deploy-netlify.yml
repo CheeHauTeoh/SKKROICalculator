@@ -10,6 +10,9 @@ name: Deploy pricing app to Netlify
 #      `proxy_path` input when triggering the workflow manually.
 
 on:
+  # A push that changes .github/netlify-deploy-request.txt (containing a one-off proxy path) also deploys.
+  push:
+    paths: [".github/netlify-deploy-request.txt"]
   workflow_dispatch:
     inputs:
       proxy_path:
@@ -46,11 +49,12 @@ jobs:
           NETLIFY_SITE_ID: ${{ secrets.NETLIFY_SITE_ID || inputs.site_id }}
         run: npx -y netlify-cli@latest deploy --build --prod --message "GitHub Actions ${{ github.sha }}"
       - name: Deploy with one-off proxy path
-        if: ${{ env.NETLIFY_AUTH_TOKEN == '' && inputs.proxy_path != '' }}
+        if: ${{ env.NETLIFY_AUTH_TOKEN == '' }}
         env:
           NETLIFY_AUTH_TOKEN: ${{ secrets.NETLIFY_AUTH_TOKEN }}
           PROXY_PATH: ${{ inputs.proxy_path }}
-        run: npx -y @netlify/mcp@latest --site-id "${{ inputs.site_id }}" --proxy-path "$PROXY_PATH"
-      - name: Nothing to authorise with
-        if: ${{ env.NETLIFY_AUTH_TOKEN == '' && inputs.proxy_path == '' }}
-        run: echo "Set the NETLIFY_AUTH_TOKEN secret or pass proxy_path" && exit 1
+          SITE_ID: ${{ inputs.site_id || '3569cecb-f13b-4be8-9a0d-8c3906832033' }}
+        run: |
+          if [ -z "$PROXY_PATH" ] && [ -s ../.github/netlify-deploy-request.txt ]; then PROXY_PATH=$(tr -d '[:space:]' < ../.github/netlify-deploy-request.txt); fi
+          if [ -z "$PROXY_PATH" ]; then echo "Set the NETLIFY_AUTH_TOKEN secret, pass proxy_path, or commit .github/netlify-deploy-request.txt"; exit 1; fi
+          npx -y @netlify/mcp@latest --site-id "$SITE_ID" --proxy-path "$PROXY_PATH"
