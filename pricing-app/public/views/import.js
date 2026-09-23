@@ -2,7 +2,7 @@
 import { get, post } from '../api.js';
 import { esc, bi, t, rm, num, toast, errMsg, dt } from '../ui.js';
 
-const KINDS = [['auto', 'auto_detect'], ['products', 'seed_products'], ['customers', 'seed_customers'], ['bundles', 'seed_bundles'], ['crosssell', 'seed_crosssell'], ['sales', 'UBS sales (item × customer)'], ['purchases', 'UBS purchases']];
+const KINDS = [['auto', 'auto_detect'], ['products', 'seed_products'], ['customers', 'seed_customers'], ['bundles', 'seed_bundles'], ['crosssell', 'seed_crosssell'], ['uom', '单位核对表 UOM worksheet'], ['prices', '价格表 price list'], ['users', '用户 users'], ['sales', 'UBS sales (item × customer)'], ['purchases', 'UBS purchases']];
 const EXPECTED = 2_752_185_900;
 
 export async function render(root) {

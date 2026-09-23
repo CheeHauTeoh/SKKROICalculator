@@ -78,3 +78,62 @@ test('customers: tier from rules unless overridden; salesperson logins created',
   imp.commit(db, { kind: 'customers', text: readSample('seed_customers.csv'), who: 'test', force: true });
   assert.equal(db.get(`SELECT price_tier FROM customers WHERE customer_code = 'C0001'`).price_tier, 'STD');
 });
+
+test('price list import: wide and long formats, append-only, idempotent', async () => {
+  const db = await Db.open(':memory:');
+  seedSample(db);
+  const wide = 'item_code 货号,list_STD 目录价,floor_STD 底价,list_KEY,floor_KEY,effective_from\n9.EC22,6.10,5.80,5.95,5.70,2026-10-01\nSXLSK,4.23,,,,\nNOPE,1,1,,,\n';
+  const r = imp.commit(db, { kind: 'auto', text: wide, filename: 'prices.csv', who: 'fin' });
+  assert.equal(r.kind, 'prices');
+  assert.equal(r.summary.changed, 3);
+  assert.equal(r.summary.skipped_reasons.unknown_product, 1);
+  assert.equal(db.get(`SELECT list_price_sen l, floor_price_sen f FROM product_prices WHERE item_code='9.EC22' AND price_tier='KEY' AND effective_to IS NULL`).l, 595);
+  assert.equal(db.get(`SELECT floor_price_sen f FROM product_prices WHERE item_code='SXLSK' AND price_tier='STD' AND effective_to IS NULL`).f, 423); // floor defaults to list
+  const again = imp.commit(db, { kind: 'prices', text: wide, filename: 'prices.csv', who: 'fin', force: true });
+  assert.equal(again.summary.changed, 0);
+  const long = 'item_code,price_tier,list_price,floor_price\n9.EC22,STD,6.20,5.90\n';
+  imp.commit(db, { kind: 'prices', text: long, who: 'fin' });
+  assert.equal(db.all(`SELECT * FROM product_prices WHERE item_code='9.EC22' AND price_tier='STD'`).length, 2);
+});
+
+test('users import creates logins with default password and never changes existing passwords', async () => {
+  const db = await Db.open(':memory:');
+  const text = 'username,display_name,role,salesperson_code,password\nyunjun,Yun Jun Ooi,finance,,\nali,Ali,salesperson,ALI,ali-first\n';
+  const r = imp.commit(db, { kind: 'users', text, who: 'owner' });
+  assert.equal(r.summary.inserted, 2);
+  const before = db.get(`SELECT password_hash h FROM users WHERE username='ali'`).h;
+  const r2 = imp.commit(db, { kind: 'users', text: text.replace('Ali,', 'Ali B,'), who: 'owner' });
+  assert.equal(r2.summary.updated, 1);
+  assert.equal(db.get(`SELECT password_hash h FROM users WHERE username='ali'`).h, before);
+  assert.equal(db.get(`SELECT role FROM users WHERE username='yunjun'`).role, 'finance');
+});
+
+test('customer import honours an explicit price_tier_override column', async () => {
+  const db = await Db.open(':memory:');
+  seedSample(db);
+  imp.commit(db, { kind: 'customers', text: 'customer_code,price_tier,price_tier_override\nC0001,KEY,Y\nC0002,KEY,\n', who: 'fin' });
+  assert.deepEqual({ ...db.get(`SELECT price_tier t, price_tier_override o FROM customers WHERE customer_code='C0001'`) }, { t: 'KEY', o: 1 });
+  assert.deepEqual({ ...db.get(`SELECT price_tier t, price_tier_override o FROM customers WHERE customer_code='C0002'`) }, { t: 'KEY', o: 0 });
+  // rules leave the override alone
+  db.run(`INSERT INTO tier_rules VALUES ('*','*','SML')`);
+  imp.commit(db, { kind: 'customers', text: readSample('seed_customers.csv'), who: 'fin', force: true });
+  assert.equal(db.get(`SELECT price_tier t FROM customers WHERE customer_code='C0001'`).t, 'KEY');
+  assert.equal(db.get(`SELECT price_tier t FROM customers WHERE customer_code='C0002'`).t, 'SML');
+});
+
+test('UOM worksheet import applies human entries through the audited product update, and later rounds overwrite', async () => {
+  const db = await Db.open(':memory:');
+  seedSample(db);
+  const sheet = 'item_code 货号,description,implied_unit_cost 推算,uom_purchase 采购单位,uom_selling,uom_factor 换算系数,suggested_cost,verified_unit_cost 核实成本 (RM),no_purchase_confirmed 确认无采购,notes\n9.EC22,EC22A+LID,121.80,CTN,PKT,25,4.87,4.87,,checked invoice\n70.JP9,JSP,53.96,,,,,,,\nSI001,Singlet,,,,,,,Y,old stock\n';
+  const chk = imp.check(db, { kind: 'auto', text: sheet });
+  assert.equal(chk.kind, 'uom');
+  const r = imp.commit(db, { kind: 'auto', text: sheet, filename: 'uom.csv', who: 'yunjun' });
+  assert.equal(r.summary.changed, 2);
+  const p = db.get(`SELECT * FROM products WHERE item_code = '9.EC22'`);
+  assert.equal(p.uom_factor, 25); assert.equal(p.verified_unit_cost_sen, 487); assert.equal(p.cost_updated_by, 'yunjun');
+  assert.equal(db.get(`SELECT no_purchase_confirmed n FROM products WHERE item_code = 'SI001'`).n, 1);
+  assert.ok(db.get(`SELECT COUNT(*) c FROM audit_log WHERE entity = 'products' AND entity_id = '9.EC22' AND field = 'verified_unit_cost_sen'`).c === 1);
+  // round two corrects the factor: overwrite, unlike the products import
+  imp.commit(db, { kind: 'uom', text: 'item_code,uom_factor,verified_unit_cost\n9.EC22,24,5.08\n', who: 'yunjun' });
+  assert.equal(db.get(`SELECT uom_factor f, verified_unit_cost_sen c FROM products WHERE item_code = '9.EC22'`).c, 508);
+});

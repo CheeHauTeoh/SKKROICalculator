@@ -280,7 +280,11 @@ export function buildRoutes() {
 
   // ---- import -----------------------------------------------------------------------------
   add('POST', '/api/import/check', MGMT, ctx => { const { _rows, ...r } = imp.check(ctx.db, { kind: ctx.body.kind, text: ctx.body.text, filename: ctx.body.filename }); return r; });
-  add('POST', '/api/import/commit', MGMT, ctx => imp.commit(ctx.db, { kind: ctx.body.kind, text: ctx.body.text, filename: ctx.body.filename, who: who(ctx), force: !!ctx.body.force }));
+  add('POST', '/api/import/commit', MGMT, ctx => {
+    const chk = imp.check(ctx.db, { kind: ctx.body.kind, text: ctx.body.text, filename: ctx.body.filename });
+    if (chk.kind === 'users' && ctx.user.role !== 'owner') throw err('forbidden', 403);
+    return imp.commit(ctx.db, { kind: chk.kind, text: ctx.body.text, filename: ctx.body.filename, who: who(ctx), force: !!ctx.body.force });
+  });
   add('GET', '/api/imports', MGMT, ctx => ({ imports: ctx.db.all('SELECT * FROM imports ORDER BY imported_at DESC LIMIT 100').map(r => ({ ...r, summary: safeJson(r.summary) })), reconcile: imp.reconcileTotal(ctx.db) }));
 
   // ---- audit ------------------------------------------------------------------------------

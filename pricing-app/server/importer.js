@@ -12,7 +12,8 @@ import { createHash } from 'node:crypto';
 import { parseCsv } from './csv.js';
 import { parseSen, parseNumber, parseBool, divideSen, marginPct } from './money.js';
 import { now } from './db.js';
-import { ensureSalespersonUser } from './auth.js';
+import { ensureSalespersonUser, hashPassword } from './auth.js';
+import { setPrice, updateProduct } from './pricing.js';
 import { audit } from './audit.js';
 
 export const QUALITY = ['OK', 'UOM_SUSPECT', 'NO_PURCHASE_DATA'];
@@ -61,6 +62,7 @@ export const KINDS = {
       buying_breadth: A('buying_breadth', 'breadth', 'sku_count', 'n_skus', 'skus'),
       size_tier: A('size_tier', 'size', 'tier_size', 'size_band'),
       price_tier: A('price_tier', 'tier', 'pricing_tier', 'price_level'),
+      price_tier_override: A('price_tier_override', 'tier_override', 'override', 'manual_tier'),
       status: A('status', 'active'),
       fy_value: A('fy_value', 'fy_sales_value', 'annual_value', 'sales_value', 'total_value', 'value', 'revenue', 'fy_sales'),
     },
@@ -85,6 +87,44 @@ export const KINDS = {
       item_code: A('item_code', 'item', 'sku', 'code', 'product_code'),
       peer_penetration_pct: A('peer_penetration_pct', 'peer_penetration', 'penetration_pct', 'penetration', 'peer_pct'),
       estimated_annual_value: A('estimated_annual_value', 'est_annual_value', 'estimated_value', 'est_value', 'opportunity_value', 'value'),
+    },
+  },
+  uom: {
+    label: 'UOM reconciliation worksheet (uom_purchase, uom_selling, uom_factor, verified_unit_cost, no_purchase_confirmed)',
+    required: ['item_code'],
+    fields: {
+      item_code: A('item_code', 'item', 'sku', 'code', 'stock_code', 'product_code', 'itemcode'),
+      uom_purchase: A('uom_purchase', 'purchase_uom', 'buy_uom', 'purchase_unit'),
+      uom_selling: A('uom_selling', 'selling_uom', 'sell_uom', 'selling_unit'),
+      uom_factor: A('uom_factor', 'factor', 'conversion_factor', 'units_per_purchase_unit'),
+      verified_unit_cost: A('verified_unit_cost', 'verified_cost', 'unit_cost_verified'),
+      no_purchase_confirmed: A('no_purchase_confirmed', 'no_purchase', 'confirm_no_purchase'),
+      target_margin_pct: A('target_margin_pct', 'target_margin'),
+      notes: A('notes', 'note', 'remark', 'remarks'),
+    },
+  },
+  prices: {
+    label: 'price list (list/floor per tier; wide: list_STD, floor_STD, ... or long: price_tier, list_price, floor_price)',
+    required: ['item_code'],
+    fields: {
+      item_code: A('item_code', 'item', 'sku', 'code', 'stock_code', 'product_code', 'itemcode'),
+      price_tier: A('price_tier', 'tier'),
+      list_price: A('list_price', 'list', 'selling_price', 'price'),
+      floor_price: A('floor_price', 'floor', 'min_price', 'minimum_price'),
+      effective_from: A('effective_from', 'from', 'effective', 'date', 'valid_from'),
+      note: A('note', 'notes', 'remark', 'remarks'),
+    },
+  },
+  users: {
+    label: 'users (username, display_name, role, salesperson_code, password)',
+    required: ['username', 'role'],
+    fields: {
+      username: A('username', 'user', 'login', 'user_name'),
+      display_name: A('display_name', 'name', 'full_name'),
+      role: A('role'),
+      salesperson_code: A('salesperson_code', 'salesperson', 'agent_code', 'code'),
+      password: A('password', 'initial_password', 'pw'),
+      active: A('active', 'status'),
     },
   },
   sales: {
@@ -146,6 +186,9 @@ export function detectMapping(kind, headers) {
 
 /** Guess the kind from headers (used when the caller does not say). */
 export function guessKind(headers) {
+  const n = headers.map(h => stripDecor(normalizeHeader(h)));
+  if (n.some(h => /^(list|floor)(_price)?_[a-z0-9]+$/.test(h))) return 'prices';
+  if (n.includes('verified_unit_cost') || n.includes('no_purchase_confirmed')) return 'uom';
   let best = null;
   for (const kind of Object.keys(KINDS)) {
     const { mapping, missing } = detectMapping(kind, headers);
@@ -192,6 +235,7 @@ function canonRows(kind, csv, mapping) {
         for (const f of ['customer_name', 'agent_code', 'salesperson', 'customer_type', 'buying_breadth', 'size_tier', 'price_tier', 'status'])
           if (has(f)) o[f] = (get(r, f) || '').trim();
         if (has('fy_value')) o.fy_value_sen = parseSen(get(r, 'fy_value'));
+        if (has('price_tier_override')) o.price_tier_override = parseBool(get(r, 'price_tier_override'));
         if (o.status !== undefined) o.status = o.status ? (/^(0|inactive|n|no|false|dormant)$/i.test(o.status) ? 'inactive' : 'active') : undefined;
         break;
       }
@@ -211,6 +255,52 @@ function canonRows(kind, csv, mapping) {
         if (!o.customer_code || !o.item_code) { warnings.push(`line ${line}: missing customer_code/item_code, skipped`); return; }
         o.peer_penetration_pct = parseNumber(get(r, 'peer_penetration_pct'));
         o.estimated_annual_value_sen = parseSen(get(r, 'estimated_annual_value'));
+        break;
+      }
+      case 'uom': {
+        o.item_code = (get(r, 'item_code') || '').trim();
+        if (!o.item_code) { warnings.push(`line ${line}: empty item_code, skipped`); return; }
+        o.patch = {};
+        for (const f of ['uom_purchase', 'uom_selling']) if (has(f) && (get(r, f) || '').trim()) o.patch[f] = get(r, f).trim();
+        if (has('uom_factor') && (get(r, 'uom_factor') || '').trim()) o.patch.uom_factor = parseNumber(get(r, 'uom_factor'));
+        if (has('verified_unit_cost') && (get(r, 'verified_unit_cost') || '').trim()) o.patch.verified_unit_cost_sen = parseSen(get(r, 'verified_unit_cost'));
+        if (has('no_purchase_confirmed') && (get(r, 'no_purchase_confirmed') || '').trim()) o.patch.no_purchase_confirmed = parseBool(get(r, 'no_purchase_confirmed'));
+        if (has('target_margin_pct') && (get(r, 'target_margin_pct') || '').trim()) o.patch.target_margin_pct = parseNumber(get(r, 'target_margin_pct'));
+        if (!Object.keys(o.patch).length) { warnings.push(`line ${line}: nothing filled in, skipped`); return; }
+        break;
+      }
+      case 'prices': {
+        o.item_code = (get(r, 'item_code') || '').trim();
+        if (!o.item_code) { warnings.push(`line ${line}: empty item_code, skipped`); return; }
+        o.effective_from = has('effective_from') ? (get(r, 'effective_from') || '').trim() || null : null;
+        o.note = has('note') ? (get(r, 'note') || '').trim() || null : null;
+        o.tiers = {};
+        // wide columns: list_STD / floor_STD (any header normalising to list[_price]_<tier>)
+        for (const h of csv.headers) {
+          const m = /^(list|floor)(?:_price)?_([a-z0-9]+?)(?:_rm)?$/.exec(normalizeHeader(h));
+          if (!m) continue;
+          const tier = m[2].toUpperCase(); const v = parseSen(r[h]);
+          if (v === null) continue;
+          o.tiers[tier] ||= {}; o.tiers[tier][m[1]] = v;
+        }
+        // long format
+        if (has('price_tier') && get(r, 'price_tier')) {
+          const tier = get(r, 'price_tier').trim().toUpperCase();
+          const l = has('list_price') ? parseSen(get(r, 'list_price')) : null, f = has('floor_price') ? parseSen(get(r, 'floor_price')) : null;
+          if (l !== null || f !== null) { o.tiers[tier] ||= {}; if (l !== null) o.tiers[tier].list = l; if (f !== null) o.tiers[tier].floor = f; }
+        }
+        if (!Object.keys(o.tiers).length) { warnings.push(`line ${line}: no price columns filled, skipped`); return; }
+        break;
+      }
+      case 'users': {
+        o.username = (get(r, 'username') || '').trim().toLowerCase();
+        o.role = (get(r, 'role') || '').trim().toLowerCase();
+        if (!/^[a-z0-9_.-]{2,32}$/.test(o.username)) { warnings.push(`line ${line}: bad username "${o.username}", skipped`); return; }
+        if (!['salesperson', 'finance', 'owner'].includes(o.role)) { warnings.push(`line ${line}: bad role "${o.role}" (salesperson/finance/owner), skipped`); return; }
+        o.display_name = (get(r, 'display_name') || '').trim() || o.username;
+        o.salesperson_code = has('salesperson_code') ? (get(r, 'salesperson_code') || '').trim() || null : null;
+        o.password = has('password') ? (get(r, 'password') || '').trim() || null : null;
+        o.active = has('active') && get(r, 'active') !== '' ? parseBool(get(r, 'active')) : 1;
         break;
       }
       case 'sales':
@@ -342,6 +432,15 @@ export function check(db, { kind, text, filename = null }) {
     totals.qty = rows.reduce((s, r) => s + (r.qty ?? 0), 0);
     totals.items = new Set(rows.map(r => r.item_code)).size;
     if (resolvedKind === 'sales') totals.customers = new Set(rows.map(r => r.customer_code)).size;
+  } else if (resolvedKind === 'uom') {
+    totals.with_factor = rows.filter(r => r.patch.uom_factor != null).length;
+    totals.with_verified_cost = rows.filter(r => r.patch.verified_unit_cost_sen != null).length;
+    totals.no_purchase_confirmed = rows.filter(r => r.patch.no_purchase_confirmed === 1).length;
+  } else if (resolvedKind === 'prices') {
+    totals.price_cells = rows.reduce((s, r) => s + Object.keys(r.tiers).length, 0);
+    totals.tiers = [...new Set(rows.flatMap(r => Object.keys(r.tiers)))];
+  } else if (resolvedKind === 'users') {
+    totals.roles = Object.fromEntries(['salesperson', 'finance', 'owner'].map(x => [x, rows.filter(r => r.role === x).length]));
   } else if (resolvedKind === 'customers') {
     totals.fy_value_sen = rows.reduce((s, r) => s + (r.fy_value_sen ?? 0), 0);
     totals.salespeople = [...new Set(rows.map(r => r.salesperson).filter(Boolean))];
@@ -371,6 +470,9 @@ export function commit(db, { kind, text, filename = null, who = 'system', force 
       case 'crosssell': s = replaceTable(db, 'crosssell_gaps', rows, ['customer_code', 'item_code', 'peer_penetration_pct', 'estimated_annual_value_sen']); break;
       case 'sales': s = commitSales(db, rows, fyLabel); break;
       case 'purchases': s = commitPurchases(db, rows, fyLabel); break;
+      case 'uom': s = commitUom(db, rows, who); break;
+      case 'prices': s = commitPrices(db, rows, who); break;
+      case 'users': s = commitUsers(db, rows); break;
     }
     db.run(`INSERT INTO imports(kind, filename, sha256, imported_at, imported_by, row_count, summary) VALUES (?, ?, ?, ?, ?, ?, ?)
             ON CONFLICT(kind, sha256) DO UPDATE SET imported_at = excluded.imported_at, imported_by = excluded.imported_by, summary = excluded.summary`,
@@ -410,10 +512,10 @@ export function mergeCustomer(db, existing, inc, tiers) {
   const out = { ...cur };
   for (const f of ['customer_name', 'agent_code', 'salesperson', 'customer_type', 'buying_breadth', 'size_tier', 'status']) if (inc[f] !== undefined && inc[f] !== '') out[f] = inc[f];
   if (inc.fy_value_sen !== undefined) out.fy_value_sen = inc.fy_value_sen;
-  if (!cur.price_tier_override) {
-    const fileTier = inc.price_tier && tiers.has(inc.price_tier.toUpperCase()) ? inc.price_tier.toUpperCase() : null;
-    out.price_tier = fileTier || resolveTier(db, out) || cur.price_tier || db.setting('default_price_tier', 'STD');
-  }
+  const fileTier = inc.price_tier && tiers.has(inc.price_tier.toUpperCase()) ? inc.price_tier.toUpperCase() : null;
+  if (inc.price_tier_override === 1 && fileTier) { out.price_tier = fileTier; out.price_tier_override = 1; }        // explicit human decision
+  else if (inc.price_tier_override === 0 && cur.price_tier_override) { out.price_tier_override = 0; out.price_tier = fileTier || resolveTier(db, out) || cur.price_tier; }
+  else if (!cur.price_tier_override) out.price_tier = fileTier || resolveTier(db, out) || cur.price_tier || db.setting('default_price_tier', 'STD');
   return out;
 }
 
@@ -500,6 +602,53 @@ function commitPurchases(db, rows, fyLabel) {
     merged.updated_at = now(); writeProduct(db, merged); updated++;
   }
   return { products_updated: updated, products_unchanged: unchanged, product_stubs: stubs };
+}
+
+function commitUom(db, rows, who) {
+  let changed = 0, unchanged = 0, skipped = 0; const skippedReasons = {};
+  for (const r of rows) {
+    if (!db.get('SELECT 1 FROM products WHERE item_code = ?', r.item_code)) { skipped++; skippedReasons.unknown_product = (skippedReasons.unknown_product || 0) + 1; continue; }
+    try { updateProduct(db, r.item_code, r.patch, who).changed.length ? changed++ : unchanged++; }
+    catch (e) { skipped++; skippedReasons[e.message] = (skippedReasons[e.message] || 0) + 1; }
+  }
+  return { changed, unchanged, skipped, skipped_reasons: skippedReasons };
+}
+
+function commitPrices(db, rows, who) {
+  const tiers = new Set(db.all('SELECT code FROM price_tiers').map(r => r.code));
+  let changed = 0, unchanged = 0, skipped = 0; const skippedReasons = {};
+  const skip = reason => { skipped++; skippedReasons[reason] = (skippedReasons[reason] || 0) + 1; };
+  for (const r of rows) {
+    if (!db.get('SELECT 1 FROM products WHERE item_code = ?', r.item_code)) { skip('unknown_product'); continue; }
+    for (const [tier, v] of Object.entries(r.tiers)) {
+      if (!tiers.has(tier)) { skip(`unknown_tier:${tier}`); continue; }
+      const cur = db.get('SELECT * FROM product_prices WHERE item_code = ? AND price_tier = ? AND effective_to IS NULL', r.item_code, tier);
+      const list = v.list ?? cur?.list_price_sen ?? null;
+      const floor = v.floor ?? cur?.floor_price_sen ?? list;
+      if (list === null) { skip('no_list_price'); continue; }
+      if (floor > list) { skip('floor_above_list'); continue; }
+      const res = setPrice(db, { item_code: r.item_code, price_tier: tier, list_price_sen: list, floor_price_sen: floor, effective_from: r.effective_from, who, note: r.note || 'import' });
+      res ? changed++ : unchanged++;
+    }
+  }
+  return { changed, unchanged, skipped, skipped_reasons: skippedReasons };
+}
+
+function commitUsers(db, rows) {
+  let inserted = 0, updated = 0, unchanged = 0;
+  for (const r of rows) {
+    const existing = db.get('SELECT * FROM users WHERE username = ?', r.username);
+    if (!existing) {
+      db.run(`INSERT INTO users(username, display_name, role, salesperson_code, password_hash, must_change_password, active, created_at) VALUES (?, ?, ?, ?, ?, 1, ?, ?)`,
+        r.username, r.display_name, r.role, r.salesperson_code, hashPassword(r.password || 'sk1234'), r.active, now());
+      inserted++; continue;
+    }
+    const same = existing.display_name === r.display_name && existing.role === r.role && (existing.salesperson_code ?? null) === r.salesperson_code && existing.active === r.active;
+    if (same) { unchanged++; continue; }
+    db.run('UPDATE users SET display_name = ?, role = ?, salesperson_code = ?, active = ? WHERE id = ?', r.display_name, r.role, r.salesperson_code, r.active, existing.id);
+    updated++; // passwords of existing users are never changed by import
+  }
+  return { inserted, updated, unchanged };
 }
 
 /** Sum of FY sales value across the product table, for the RM27,521,859 reconciliation check. */
