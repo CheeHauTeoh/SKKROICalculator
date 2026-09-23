@@ -31,9 +31,29 @@ npm run import:check -- path/to/file.csv [kind]   # dry run: shows detected colu
 Environment: `PORT` (3000), `HOST`, `DB_PATH` (default `data/pricing.sqlite`), `ADMIN_PASSWORD`,
 `SECURE_COOKIES=1` when served over HTTPS (do this in production), `LOG=1` for request logging.
 
-Deploy anywhere that runs a Node 22 process with a persistent disk: a small VPS behind Caddy/nginx
-(for HTTPS, which the PWA needs to install and to run its service worker), or the `Dockerfile` with a
-volume at `/data`. Back up the single file `pricing.sqlite`.
+## Hosting
+
+**Option A, Netlify (no server to run).** `netlify.toml`, `netlify/functions/api` and `scripts/prepare-netlify.mjs`
+deploy the same code as one serverless function running SQLite in WebAssembly (`sql.js`), with the
+database file persisted in Netlify Blobs. Static files are served from `public/`. Set up once in the
+Netlify UI: *Add new project → Import an existing project → GitHub → this repository*, **base directory
+`pricing-app`**, keep the detected build command (`npm run build:netlify`) and publish directory
+(`public`), and add environment variables `ADMIN_PASSWORD` (first owner password) and, for a demo,
+`SEED_SAMPLE=1` (loads the synthetic sample on first start). Every push to the chosen branch then
+deploys. Notes:
+
+- Writes are serialised with a short lock and the whole database file is written back after each
+  change. That is fine for ~10 internal users; it is not a high-concurrency design. If the lock
+  expires mid-request (15 s) a concurrent write can be lost, so treat this as pilot hosting and move
+  to Option B (or Postgres) before it becomes the system of record for many users.
+- To go from sample data to real data: log in as owner, 设置 → 清空业务数据 (Reset business data),
+  then import the four CSVs on the 导入 page. Unset `SEED_SAMPLE` afterwards.
+- `npm test` covers this runtime against an in-memory fake of the blob store (`test/netlify.test.js`).
+
+**Option B, your own Node process.** Anything that runs Node 22 with a persistent disk: a small VPS
+behind Caddy/nginx (for HTTPS, which the PWA needs to install and to run its service worker), or the
+`Dockerfile` with a volume at `/data`. Back up the single file `pricing.sqlite`. No npm install is
+needed for this option.
 
 ## Screens and milestones
 

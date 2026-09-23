@@ -3,6 +3,7 @@
   command = "npm run build:netlify"
 
 [functions]
+  directory = "netlify/functions"
   node_bundler = "esbuild"
 
 [[redirects]]

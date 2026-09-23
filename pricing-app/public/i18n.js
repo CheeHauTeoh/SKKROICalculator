@@ -50,6 +50,8 @@ const D = {
   who: ['谁', 'Who'], when: ['时间', 'When'], what: ['操作', 'Action'], field: ['字段', 'Field'], old: ['旧值', 'Old'], new: ['新值', 'New'], export: ['导出', 'Export'],
   role_salesperson: ['业务员', 'Salesperson'], role_finance: ['财务', 'Finance'], role_owner: ['老板', 'Owner'], customers: ['客户', 'Customers'], override: ['手动', 'Manual'],
   error: ['出错', 'Error'], confirm: ['确定？', 'Are you sure?'], loading: ['载入中…', 'Loading…'], showing: ['显示', 'Showing'], of: ['/', 'of'], more: ['更多', 'More'], close: ['关闭', 'Close'],
+  reset_title: ['清空业务数据', 'Reset business data'], reset_help: ['删除全部产品、价格、客户、现场记录、审计和导入记录；保留登录账号和设置。请在导入真实数据前用来清除示例数据。', 'Deletes all products, prices, customers, captures, audit and import records. Logins and settings are kept. Use it to clear the sample data before loading real CSVs.'],
+  reset_confirm: ['输入 RESET 确认', 'Type RESET to confirm'], reset_seed: ['重新载入示例数据', 'Reload sample data'],
   status_active: ['在售', 'Active'], status_inactive: ['停售', 'Inactive'], default_tier: ['默认等级', 'Default tier'], fy: ['财年', 'FY'], id: ['编号', 'ID'],
 };
 export const t = key => (D[key] ? D[key][0] : key);
