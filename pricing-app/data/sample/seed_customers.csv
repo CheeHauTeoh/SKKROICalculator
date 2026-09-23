@@ -1,0 +1,37 @@
+customer_code,customer_name,agent_code,salesperson,customer_type,buying_breadth,size_tier,price_tier,status,fy_value
+C0001,"Hypermarket Pasir Mas 1",A2,CHONG,"Hypermarket",wide,S,,active,157094.05
+C0002,"Wholesaler Tumpat 2",A3,MUTHU,"Wholesaler",medium,S,,active,129512.37
+C0003,"Restaurant Bachok 3",A1,ALI,"Restaurant",wide,S,,active,266866.60
+C0004,"Restaurant Machang 4",A2,CHONG,"Restaurant",wide,M,,active,109119.55
+C0005,"Wholesaler Kota Bharu 5",A3,MUTHU,"Wholesaler",wide,M,,active,146523.25
+C0006,"Wholesaler Pasir Mas 6",A1,ALI,"Wholesaler",wide,M,,active,157613.77
+C0007,"Kedai runcit Tumpat 7",A2,CHONG,"Kedai runcit",narrow,S,,active,45257.49
+C0008,"Restaurant Bachok 8",A3,MUTHU,"Restaurant",narrow,M,,active,198626.38
+C0009,"Hawker Machang 9",A1,ALI,"Hawker",wide,M,,active,137185.23
+C0010,"Wholesaler Kota Bharu 10",A2,CHONG,"Wholesaler",wide,L,,active,219237.17
+C0011,"Kedai runcit Pasir Mas 11",A3,MUTHU,"Kedai runcit",wide,M,,active,82917.85
+C0012,"Hawker Tumpat 12",A1,ALI,"Hawker",wide,S,,active,128887.76
+C0013,"Hypermarket Bachok 13",A2,CHONG,"Hypermarket",medium,M,,active,161570.06
+C0014,"Kedai runcit Machang 14",A3,MUTHU,"Kedai runcit",wide,M,,active,84016.06
+C0015,"Restaurant Kota Bharu 15",A1,ALI,"Restaurant",wide,L,,active,256159.93
+C0016,"Wholesaler Pasir Mas 16",A2,CHONG,"Wholesaler",medium,S,,active,184165.33
+C0017,"Hypermarket Tumpat 17",A3,MUTHU,"Hypermarket",narrow,L,,active,97696.26
+C0018,"Kedai runcit Bachok 18",A1,ALI,"Kedai runcit",wide,L,,active,204732.65
+C0019,"Wholesaler Machang 19",A2,CHONG,"Wholesaler",narrow,L,,active,158149.63
+C0020,"Restaurant Kota Bharu 20",A3,MUTHU,"Restaurant",wide,S,,active,158844.96
+C0021,"Wholesaler Pasir Mas 21",A1,ALI,"Wholesaler",wide,L,,active,143880.72
+C0022,"Restaurant Tumpat 22",A2,CHONG,"Restaurant",medium,S,,active,188006.24
+C0023,"Kedai runcit Bachok 23",A3,MUTHU,"Kedai runcit",wide,M,,active,233319.44
+C0024,"Wholesaler Machang 24",A1,ALI,"Wholesaler",narrow,M,,active,219074.39
+C0025,"Wholesaler Kota Bharu 25",A2,CHONG,"Wholesaler",narrow,L,,active,95859.05
+C0026,"Wholesaler Pasir Mas 26",A3,MUTHU,"Wholesaler",medium,L,,active,246462.25
+C0027,"Hypermarket Tumpat 27",A1,ALI,"Hypermarket",narrow,M,,active,95705.50
+C0028,"Kedai runcit Bachok 28",A2,CHONG,"Kedai runcit",narrow,L,,active,174461.70
+C0029,"Hypermarket Machang 29",A3,MUTHU,"Hypermarket",wide,S,,active,148086.69
+C0030,"Wholesaler Kota Bharu 30",A1,ALI,"Wholesaler",medium,L,,active,201468.83
+C0031,"Hypermarket Pasir Mas 31",A2,CHONG,"Hypermarket",wide,M,,active,178003.81
+C0032,"Restaurant Tumpat 32",A3,MUTHU,"Restaurant",medium,S,,active,115066.92
+C0033,"Kedai runcit Bachok 33",A1,ALI,"Kedai runcit",medium,M,,active,72677.73
+C0034,"Kedai runcit Machang 34",A2,CHONG,"Kedai runcit",medium,S,,active,189070.02
+C0035,"Restaurant Kota Bharu 35",A3,MUTHU,"Restaurant",narrow,S,,active,65991.56
+C0036,"Kedai runcit Pasir Mas 36",A1,ALI,"Kedai runcit",narrow,L,,active,151700.00

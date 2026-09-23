@@ -1,0 +1,4 @@
+data/*.sqlite
+data/*.sqlite-*
+data/seed/*.csv
+node_modules/
