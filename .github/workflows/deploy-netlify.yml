@@ -56,5 +56,8 @@ jobs:
           SITE_ID: ${{ inputs.site_id || '3569cecb-f13b-4be8-9a0d-8c3906832033' }}
         run: |
           if [ -z "$PROXY_PATH" ] && [ -s ../.github/netlify-deploy-request.txt ]; then PROXY_PATH=$(tr -d '[:space:]' < ../.github/netlify-deploy-request.txt); fi
-          if [ -z "$PROXY_PATH" ]; then echo "Set the NETLIFY_AUTH_TOKEN secret, pass proxy_path, or commit .github/netlify-deploy-request.txt"; exit 1; fi
+          if [ -z "$PROXY_PATH" ]; then
+            echo "No deploy request: set the NETLIFY_AUTH_TOKEN secret, pass proxy_path, or put a proxy path in .github/netlify-deploy-request.txt"
+            [ "${{ github.event_name }}" = "push" ] && exit 0 || exit 1
+          fi
           npx -y @netlify/mcp@latest --site-id "$SITE_ID" --proxy-path "$PROXY_PATH"
