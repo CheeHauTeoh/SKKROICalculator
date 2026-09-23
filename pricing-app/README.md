@@ -38,8 +38,8 @@ deploy the same code as one serverless function running SQLite in WebAssembly (`
 database file persisted in Netlify Blobs. Static files are served from `public/`. Set up once in the
 Netlify UI: *Add new project → Import an existing project → GitHub → this repository*, **base directory
 `pricing-app`**, keep the detected build command (`npm run build:netlify`) and publish directory
-(`public`), and add environment variables `ADMIN_PASSWORD` (first owner password) and, for a demo,
-`SEED_SAMPLE=1` (loads the synthetic sample on first start). Every push to the chosen branch then
+(`public`), and add environment variables `ADMIN_PASSWORD` (first owner password; a plain variable,
+see below) and, for a demo, `SEED_SAMPLE=1` (loads the synthetic sample on first start). Every push to the chosen branch then
 deploys. Notes:
 
 - Writes are serialised with a short lock and the whole database file is written back after each
@@ -48,6 +48,13 @@ deploys. Notes:
   to Option B (or Postgres) before it becomes the system of record for many users.
 - To go from sample data to real data: log in as owner, 设置 → 清空业务数据 (Reset business data),
   then import the four CSVs on the 导入 page. Unset `SEED_SAMPLE` afterwards.
+- **Owner password recovery:** set the site environment variable `OWNER_PASSWORD_RESET` to a new
+  password and redeploy. On the next request the owner's password becomes that value (and must be
+  changed at login). Each distinct value is applied once, so later redeploys never undo a password
+  the owner has since changed. `GET /api/health` (public, no secrets) shows whether a reset applied.
+- On this Netlify team, variables marked *secret* were not visible to the function at runtime; the
+  same variables created as plain variables were. Use plain variables for `OWNER_PASSWORD_RESET`
+  and `SEED_SAMPLE`.
 - `npm test` covers this runtime against an in-memory fake of the blob store (`test/netlify.test.js`).
 
 **Option B, your own Node process.** Anything that runs Node 22 with a persistent disk: a small VPS
