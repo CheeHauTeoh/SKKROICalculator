@@ -23,6 +23,7 @@ export function createRuntime({ store, sqlJs, env, sample = {} }) {
       if (env('SEED_SAMPLE') === '1') seedFromTexts(db, sample, { who: 'seed' });
       await store.set(KEY, db.export());
     }
+    if (auth.applyOwnerPasswordReset(db, env('OWNER_PASSWORD_RESET'))) await store.set(KEY, db.export());
     cache = { etag: (await store.getMetadata(KEY))?.etag ?? null, db, api: createApi(db, { secureCookies: true, sampleTexts: async () => sample }) };
     return cache;
   }

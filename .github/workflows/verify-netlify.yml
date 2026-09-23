@@ -24,6 +24,6 @@ jobs:
       - name: Live checks
         run: |
           URL="${{ inputs.base_url }}"
-          if [ -z "$URL" ] && [ -s .github/netlify-verify-request.txt ]; then URL=$(tr -d '[:space:]' < .github/netlify-verify-request.txt); fi
+          if [ -z "$URL" ] && [ -s .github/netlify-verify-request.txt ]; then URL=$(grep -v "^#" .github/netlify-verify-request.txt | head -1 | tr -d "[:space:]"); fi
           if [ -z "$URL" ]; then echo "no URL requested"; exit 0; fi
           node pricing-app/scripts/verify-live.mjs "$URL"

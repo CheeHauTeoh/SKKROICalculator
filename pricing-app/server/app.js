@@ -73,6 +73,7 @@ function json(status, payload, headers = {}) {
 export async function createApp({ dbPath = process.env.DB_PATH || join(here, '..', 'data', 'pricing.sqlite'), secureCookies = process.env.SECURE_COOKIES === '1', log = () => {} } = {}) {
   const db = await Db.open(dbPath);
   const bootstrapPassword = auth.bootstrap(db, { adminPassword: process.env.ADMIN_PASSWORD });
+  auth.applyOwnerPasswordReset(db, process.env.OWNER_PASSWORD_RESET);
   const api = createApi(db, { secureCookies, sampleTexts: async () => { const { readdirSync, readFileSync } = await import('node:fs'); const dir = join(here, '..', 'data', 'sample'); return Object.fromEntries(readdirSync(dir).filter(f => f.endsWith('.csv')).map(f => [f, readFileSync(join(dir, f), 'utf8')])); } });
 
   async function handle(req, res) {

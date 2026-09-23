@@ -26,6 +26,14 @@ export function buildRoutes() {
   const routes = [];
   const add = (method, path, roles, handler) => routes.push({ method, roles, handler, ...compile(path) });
 
+  // ---- health (public, no secrets) --------------------------------------------------------
+  add('GET', '/api/health', null, ctx => ({
+    ok: true, time: now(),
+    users: ctx.db.get('SELECT COUNT(*) c FROM users').c, products: ctx.db.get('SELECT COUNT(*) c FROM products').c,
+    bootstrap_password_source: ctx.db.setting('bootstrap_password_source', 'unknown'),
+    owner_password_reset_at: ctx.db.setting('owner_password_reset_at'),
+  }));
+
   // ---- auth -------------------------------------------------------------------------------
   add('POST', '/api/auth/login', null, ctx => {
     const r = auth.login(ctx.db, ctx.body.username, ctx.body.password);

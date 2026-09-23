@@ -1,4 +1,4 @@
-import { randomBytes, scryptSync, timingSafeEqual } from 'node:crypto';
+import { randomBytes, scryptSync, timingSafeEqual, createHash } from 'node:crypto';
 import { now } from './db.js';
 
 export const ROLES = ['salesperson', 'finance', 'owner'];
@@ -72,7 +72,26 @@ export function bootstrap(db, { adminPassword } = {}) {
   const pw = adminPassword || 'changeme';
   db.run(`INSERT INTO users(username, display_name, role, password_hash, must_change_password, active, created_at)
           VALUES ('owner', 'Owner', 'owner', ?, 1, 1, ?)`, hashPassword(pw), now());
+  db.setSetting('bootstrap_password_source', adminPassword ? 'env' : 'default');
   return pw;
+}
+
+/**
+ * Recovery: set the owner's password from a deployment secret. Applied once per distinct value
+ * (a hash of the value is remembered), so redeploys do not keep resetting it after the owner
+ * changed it. Returns true when a reset was applied.
+ */
+export function applyOwnerPasswordReset(db, value) {
+  if (!value || String(value).length < 6) return false;
+  const marker = createHash('sha256').update(String(value)).digest('hex');
+  if (db.setting('owner_password_reset_marker') === marker) return false;
+  const owner = db.get(`SELECT id FROM users WHERE role = 'owner' ORDER BY id LIMIT 1`);
+  if (!owner) return false;
+  db.run('UPDATE users SET password_hash = ?, must_change_password = 1, active = 1 WHERE id = ?', hashPassword(value), owner.id);
+  db.run('DELETE FROM sessions WHERE user_id = ?', owner.id);
+  db.setSetting('owner_password_reset_marker', marker);
+  db.setSetting('owner_password_reset_at', now());
+  return true;
 }
 
 /** Ensure a salesperson login exists for a salesperson code seen in customer data. */

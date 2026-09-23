@@ -90,3 +90,23 @@ test('owner reset wipes business data but keeps logins, and can reload the sampl
   assert.ok(r2.json.seeded.length >= 5);
   assert.equal((await call(rt, 'GET', '/api/products', { cookie: owner })).json.length, 67);
 });
+
+test('OWNER_PASSWORD_RESET recovers the owner login once per value; health reports the password source', async () => {
+  const store = fakeStore();
+  const rt = mk(store);
+  const h = await call(rt, 'GET', '/api/health');
+  assert.equal(h.status, 200); assert.equal(h.json.bootstrap_password_source, 'env'); assert.equal(h.json.owner_password_reset_at, null);
+  env.OWNER_PASSWORD_RESET = 'recovered1';
+  const rt2 = mk(store); // cold instance picks it up
+  assert.equal((await call(rt2, 'POST', '/api/auth/login', { body: { username: 'owner', password: 'boss12345' } })).status, 401);
+  const ok = await call(rt2, 'POST', '/api/auth/login', { body: { username: 'owner', password: 'recovered1' } });
+  assert.equal(ok.status, 200); assert.equal(ok.json.user.must_change_password, true);
+  assert.ok((await call(rt2, 'GET', '/api/health')).json.owner_password_reset_at);
+  // owner changes the password; a redeploy with the same env value must not undo it
+  const cookie = cookieOf(ok);
+  assert.equal((await call(rt2, 'POST', '/api/auth/change-password', { cookie, body: { current_password: 'recovered1', new_password: 'mine-now-1' } })).status, 200);
+  const rt3 = mk(store);
+  assert.equal((await call(rt3, 'POST', '/api/auth/login', { body: { username: 'owner', password: 'recovered1' } })).status, 401);
+  assert.equal((await call(rt3, 'POST', '/api/auth/login', { body: { username: 'owner', password: 'mine-now-1' } })).status, 200);
+  delete env.OWNER_PASSWORD_RESET;
+});

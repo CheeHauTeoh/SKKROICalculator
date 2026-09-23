@@ -16,6 +16,8 @@ const home = await call('GET', '/');
 check('GET / serves the app shell', home.status === 200 && home.text.includes('<title>SK Keong'), `${home.status} ${home.ms}ms`);
 const sw = await call('GET', '/sw.js');
 check('GET /sw.js served', sw.status === 200 && sw.text.includes('skk-v'), `${sw.status}`);
+const health = await call('GET', '/api/health');
+check('health endpoint', health.status === 200 && health.json?.ok === true, `${health.status} ${health.text.slice(0, 200)}`);
 const me = await call('GET', '/api/auth/me');
 check('function boots and answers JSON (unauthenticated)', me.status === 401 && me.json?.error === 'unauthenticated', `${me.status} ${me.ms}ms ${me.text.slice(0, 80)}`);
 const bad = await call('POST', '/api/auth/login', { body: { username: 'owner', password: 'definitely-wrong' } });
