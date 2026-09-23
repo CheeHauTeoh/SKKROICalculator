@@ -34,6 +34,10 @@ check('snapshot leaks no cost/margin keys', [...keys(snap.json || {})].filter(k 
 const prod = await call('GET', '/api/products/9.EC22', { cookie });
 check('product detail for salesperson has no cost keys', prod.status === 200 && [...keys(prod.json)].filter(k => SENSITIVE.test(k)).length === 0, `${prod.status}`);
 check('export forbidden for salesperson', (await call('GET', '/api/export/products.csv', { cookie })).status === 403);
+const chg = await call('POST', '/api/auth/change-password', { cookie, body: { current_password: 'sk1234', new_password: 'sk1234' } });
+check('change-password flow works (same value, no side effect)', chg.status === 200, `${chg.status} ${chg.text.slice(0, 80)}`);
+const wrongCur = await call('POST', '/api/auth/change-password', { cookie, body: { current_password: 'nope', new_password: 'whatever1' } });
+check('change-password rejects a wrong current password', wrongCur.status === 401);
 const id = crypto.randomUUID();
 const cap = await call('POST', '/api/field-prices/batch', { cookie, body: { captures: [{ id, item_code: '9.EC22', customer_code: 'C0003', competitor_price_sen: 555, competitor_name: 'verify-live', outcome: 'quoted', note: 'automated live verification' }] } });
 check('capture accepted (write path + lock + blob save)', cap.status === 200 && cap.json?.accepted?.includes(id), `${cap.status} ${cap.ms}ms ${cap.text.slice(0, 120)}`);
