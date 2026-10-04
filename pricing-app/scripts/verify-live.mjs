@@ -22,6 +22,10 @@ const me = await call('GET', '/api/auth/me');
 check('function boots and answers JSON (unauthenticated)', me.status === 401 && me.json?.error === 'unauthenticated', `${me.status} ${me.ms}ms ${me.text.slice(0, 80)}`);
 const bad = await call('POST', '/api/auth/login', { body: { username: 'owner', password: 'definitely-wrong' } });
 check('wrong password rejected', bad.status === 401, `${bad.status}`);
+if (process.env.OWNER_TEST_PASSWORD) {
+  const own = await call('POST', '/api/auth/login', { body: { username: 'owner', password: process.env.OWNER_TEST_PASSWORD } });
+  check('owner login with the reset password', own.status === 200 && own.json?.user?.role === 'owner', `${own.status} must_change_password=${own.json?.user?.must_change_password}`);
+}
 const dflt = await call('POST', '/api/auth/login', { body: { username: 'owner', password: 'changeme' } });
 console.log(`info owner login with the built-in default password: ${dflt.status === 200 ? 'WORKS (ADMIN_PASSWORD was not applied at bootstrap)' : 'rejected (' + dflt.status + ')'}`);
 const login = await call('POST', '/api/auth/login', { body: { username: 'ali', password: 'sk1234' } });
