@@ -3,7 +3,8 @@ import { get, post, del } from '../api.js';
 import { esc, bi, t, rm, rmBig, toSen, pct, num, toast, errMsg, costBadge, modal, on, dt, d } from '../ui.js';
 
 export async function render(root) {
-  const cats = await get('/api/categories');
+  const [cats, settings] = await Promise.all([get('/api/categories'), get('/api/settings')]);
+  const DEF = settings.default_price_tier || 'STD';
   let f = { core: '1', category: '', only: '' };
   root.innerHTML = `<h1>${bi('intel_title')}</h1>
     <div class="filters"><select id="core"><option value="1">${t('core')} SKU</option><option value="">${t('all')} SKU</option></select>
@@ -30,11 +31,10 @@ export async function render(root) {
 
   async function detail(code) {
     const p = await get(`/api/products/${encodeURIComponent(code)}`);
-    const std = p.prices[Object.keys(p.prices)[0]];
     modal(`<h2>${esc(code)}</h2><p class="small">${esc(p.description)} · ${esc(p.category)}</p>
       <div class="kpis">${Object.values(p.prices).map(pr => `<div class="kpi"><div class="v">${rm(pr.list_price_sen)} <span class="small muted">/ ${rm(pr.floor_price_sen)}</span></div><div class="l">${esc(pr.price_tier)} ${t('list_price')} / ${t('floor_price')}</div></div>`).join('') || `<div class="kpi"><div class="v">—</div><div class="l">${t('no_price')}</div></div>`}
         <div class="kpi"><div class="v">${p.cost.cost_sen != null ? rm(p.cost.cost_sen) : '—'}</div><div class="l">${costBadge(p.cost.basis)}</div></div></div>
-      <h3>${bi('field_intel')}</h3>${chart(p)}
+      <h3>${bi('field_intel')}</h3>${chart(p, DEF)}
       <div class="tblwrap"><table class="tbl"><tr><th>${t('date')}</th><th>${t('who')}</th><th>${t('customer')}</th><th class="num">${t('their_price')}</th><th class="num">${t('our_price')}</th><th>${t('competitor')}</th><th>${t('outcome')}</th><th>${t('note')}</th></tr>
         ${p.field_prices.map(x => `<tr><td class="small">${dt(x.captured_at)}</td><td>${esc(x.salesperson)}</td><td class="small">${esc(x.customer_name || x.customer_code || '')}</td><td class="num">${rm(x.competitor_price_sen)}</td><td class="num">${rm(x.our_price_sen)}</td><td>${esc(x.competitor_name || '')}</td><td>${t(x.outcome)}</td><td class="small">${esc(x.note || '')}</td></tr>`).join('') || `<tr><td colspan="8" class="muted">${t('none_yet')}</td></tr>`}</table></div>
       <h3>${bi('market_ref')}</h3>
@@ -55,9 +55,9 @@ export async function render(root) {
 }
 
 /** Inline SVG: competitor captures (dots) over time with our current list/floor as lines. */
-function chart(p) {
+function chart(p, defTier) {
   const pts = p.field_prices.filter(x => x.competitor_price_sen != null).map(x => ({ t: Date.parse(x.captured_at), y: x.competitor_price_sen, o: x.outcome })).sort((a, b) => a.t - b.t);
-  const std = Object.values(p.prices)[0];
+  const std = p.prices[defTier] || null; // lines show the default tier, matching the summary table
   const refs = p.market_refs.map(m => ({ t: Date.parse(m.captured_at), y: m.price_sen }));
   if (!pts.length && !std && !refs.length) return `<p class="muted small">${t('none_yet')}</p>`;
   const W = 640, H = 220, L = 56, R = 12, T = 12, B = 28;
