@@ -92,6 +92,37 @@ local floor. Higher points are treated as roof, and surfaces that carry on past
 the cap are treated as walls or columns. That suits hand-stacked cartons and
 pallets. In a racked warehouse, set `--stock-cap` just below the ceiling.
 
+## Layout planner: move the products around in Blender
+
+```bash
+python warehouse3d/build_layout_planner.py scan.obj --images tex/*.jpg --scan scan.laz --layout out/ --out out/
+```
+
+This writes `warehouse_layout_planner.blend` (Blender 5.2 or newer, textures
+packed in). In it:
+
+- **Stock and racking:** the scanned products, cut into pallet-sized stacks
+  (about 1.2 × 1.0 m) named by zone (`Stack A-12`). Each one carries its real
+  photo texture. Select one and press `G` to move it or `R Z` to turn it. They
+  stay on the floor, and `Ctrl` while moving snaps to the grid.
+- **Scan: building:** floor and walls, locked so clicks go to the stock.
+  **Scan: roof** starts hidden.
+- **As scanned (outlines):** hidden boxes showing where every stack started.
+- **Floor plan:** Polycam zones and walls.
+- **Library:** a pallet stack, a 2.7 m pallet rack bay (3 levels × 2 pallets),
+  a 1.8 m shelving bay, and 1.2, 2.0 and 3.5 m aisle gauges.
+
+When Blender asks, allow scripts to run (or open the Scripting tab and press
+Run Script on `warehouse_planner.py`). Then press `N` in the 3D view and open
+the **Warehouse** tab. It re-checks the layout as you move things and shows:
+
+- stock footprint, volume, rack pallet places, and free and aisle floor, per zone
+- stacks that overlap, hit a wall, sit off the floor, come within the roof
+  clearance, or have no aisle of the chosen width beside them
+- buttons to add library items at the 3D cursor, to switch between product
+  photos and height colours, and to show or hide the roof, original positions,
+  plan and building scan
+
 ## Outputs
 
 - `warehouse_scaled.blend`: metres, floor at z=0. Scans show as points, meshes as meshes.
