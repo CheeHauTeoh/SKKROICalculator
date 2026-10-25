@@ -1,80 +1,95 @@
-# Warehouse 3D reconstruction and measurement
+# Warehouse 3D capture and measurement
 
-Turns a walkthrough video or photos of the warehouse into a 3D world with the
-[World Labs Marble API](https://docs.worldlabs.ai/api), then scales and measures
-it in Blender (run as the `bpy` Python module, no GUI needed).
+Measures the warehouse from a 3D capture and produces a metric Blender scene,
+a floor plan and a measurement report for layout planning. Blender runs as the
+`bpy` Python module, so no GUI is needed.
 
 ```
-video / photos ──► marble_client.py ──► collider.glb + world.json
-                                              │
-                    tape / laser reference ──►│
-                                              ▼
-                                   blender_measure.py ──► warehouse_scaled.blend
-                                                          floor_plan.svg
-                                                          report.json / report.md
+LiDAR scanner export (.e57 .las .laz) ─────────────┐
+Phone LiDAR (Polycam etc: .ply .obj .glb) ─────────┤
+Video/photos ─► marble_client.py ─► collider.glb ──┤  (+ taped reference distance)
+                                                   ▼
+                                     blender_measure.py ─► warehouse_scaled.blend
+                                                           floor_plan.svg
+                                                           report.md / report.json
 ```
+
+Which input to use:
+
+| Input | Scale | Accuracy | Notes |
+|---|---|---|---|
+| Matterport Pro3 / tripod scanner E57 | metres | ±20 mm @ 10 m (Matterport spec) | Best for planning |
+| Handheld SLAM (BLK2GO, NavVis) E57/LAS | metres | ~10-20 mm, drifts on long walks | Close the loop when scanning |
+| iPhone/iPad LiDAR (Polycam, Scaniverse) | metres | Drifts over large areas, ~5 m range | One bay or a small store |
+| World Labs Marble (video) | needs calibration | Generative, not a survey | Concept layouts only |
 
 ## Setup
 
 ```bash
 uv venv -p 3.13 .venv && source .venv/bin/activate   # bpy 5.2 ships wheels for Python 3.13
 uv pip install -r warehouse3d/requirements.txt
+```
+
+## LiDAR scans
+
+```bash
+# Matterport Pro3 / Leica BLK / NavVis: export E57 (or LAS/LAZ)
+python warehouse3d/blender_measure.py scan.e57 --out out/
+
+# LAS stored in millimetres or feet
+python warehouse3d/blender_measure.py scan.las --units mm --out out/
+
+# Polycam / iPhone exports are usually Y-up
+python warehouse3d/blender_measure.py polycam.ply --units m --up y --out out/
+```
+
+If the report warns that the ceiling is higher than the building is wide, the
+up axis is wrong. Rerun with `--up y` (or `--up x`).
+
+Useful options:
+- `--obstacle-band 0.3 2.5`: the height range where anything blocks floor use.
+  Pipes, beams and lights above it count toward clear height, not obstruction.
+- `--rack-depth 2.6`: enclosed obstructions narrower than this are filled in
+  (scanners only see the aisle faces of a rack row). Raise it for deeper racking.
+- `--voxel 0.03`: downsampling. Raise it for very large E57 files.
+
+## World Labs Marble (video or photos)
+
+```bash
 export WLT_API_KEY=...   # from https://platform.worldlabs.ai
-```
-
-## 1. Capture
-
-- One slow, steady walkthrough video, under 100 MB, covering every wall and aisle.
-- Before filming, measure 2-3 long distances on site (wall to wall, column to
-  column) with a laser meter. You need at least one to set the scale.
-
-## 2. Generate the world
-
-```bash
-python warehouse3d/marble_client.py --video walkthrough.mp4 --out out/ --dry-run   # check the request
+python warehouse3d/marble_client.py --video walkthrough.mp4 --out out/ --dry-run
 python warehouse3d/marble_client.py --video walkthrough.mp4 --out out/
-```
-
-Saves `out/world.json` (all asset URLs plus `metric_scale_factor`) and
-`out/collider.glb`.
-
-## 3. Calibrate and measure
-
-Open `out/collider.glb` in Blender, measure the same distance you taped on site
-(Measure tool), then:
-
-```bash
+# measure one distance in out/collider.glb with Blender's Measure tool, then:
 python warehouse3d/blender_measure.py out/collider.glb --ref-model 3.71 --ref-real 10.0 --out out/
 ```
 
-Or try Marble's own scale with `--world-json out/world.json`, then check it
-against a taped distance.
+Marble fills in geometry it didn't see clearly. Check 3-5 distances on site.
+The API field names come from the public docs and have not been tested against
+the live API.
 
-Outputs:
-- `warehouse_scaled.blend`: metric units, floor at z=0. Use it for racking layout in Blender.
-- `floor_plan.svg`: top-down plan. Light is usable floor, dark is obstruction, on a 5 m grid.
+## Outputs
+
+- `warehouse_scaled.blend`: metres, floor at z=0. Scans show as points, meshes as meshes.
+- `floor_plan.svg`: top-down plan on a 5 m grid. Light is usable floor, dark is obstruction.
 - `report.md` / `report.json`: footprint, floor area, obstructed and usable area,
-  ceiling height, gross volume.
+  ceiling height, clear height under beams/pipes/lights, gross volume.
 
-## Test without the API
+## Test without real data
 
 ```bash
-python warehouse3d/make_test_scene.py test.glb          # 40 x 25 m, 10 m ceiling, built at 0.4 units/m
-python warehouse3d/blender_measure.py test.glb --ref-model 16 --ref-real 40 --out test_out/
+python warehouse3d/make_test_scene.py test.e57              # also .las (--las-mm), .ply (--y-up), .glb
+python warehouse3d/blender_measure.py test.e57 --out test_out/
 ```
 
-Expected result: about 40.3 x 25.3 m footprint (the wall bases add width),
-10.0 m ceiling, and racks plus columns shown as obstructions.
+The test warehouse is 40 x 25 m with a 10 m ceiling, two 30 x 1.2 x 6 m rack
+rows, four columns and a pipe whose underside is at 6.85 m. Every format should
+report a 40.3 x 25.3 m footprint (wall bases included), 10.0 m ceiling and
+6.83-6.85 m clear height.
 
-## Limits
+## Sources
 
-- **Marble is generative.** It fills in geometry the camera didn't see clearly,
-  so it is not a survey. Always check 3-5 distances on site before committing to
-  racking orders.
-- **Scale:** the FAQ says splats come in arbitrary units and you multiply by
-  `metric_scale_factor` ([FAQ](https://docs.worldlabs.ai/api/faq)). One
-  third-party project says the collider mesh is already metric
-  ([worldspec](https://github.com/3-rt/worldspec)). That's why a taped reference
-  distance is the default calibration.
-- The API request and response field names were taken from the public docs but
-  have not yet been tested against the live API. Run `--dry-run` first.
+- Matterport Pro3 accuracy: https://matterport.com/store/product/cam-mc300-x
+- BLK2GO accuracy and drift: https://athena.westpoint.edu/items/b9bf4ec2-e574-4704-aec7-3a491886086d
+- iPhone LiDAR range and drift: https://support.arcsite.com/en/articles/10593500-room-scanner,
+  https://isprs-archives.copernicus.org/articles/XLVIII-2-2024/415/2024/
+- Marble scale metadata: https://docs.worldlabs.ai/api/faq
