@@ -4,3 +4,7 @@ scipy
 requests
 pye57
 laspy[lazrs]
+ezdxf
+shapely
+matplotlib
+pillow

@@ -67,6 +67,31 @@ Marble fills in geometry it didn't see clearly. Check 3-5 distances on site.
 The API field names come from the public docs and have not been tested against
 the live API.
 
+## Product layout and textured 3D model (Polycam exports)
+
+From a Polycam LiDAR scan, export **LAZ** (point cloud), **DXF + CSV** (floor
+plan) and **OBJ** (textured mesh), then:
+
+```bash
+# Floor plan zones, stock footprint, free floor, stack heights, stock volume
+python warehouse3d/layout_map.py scan.laz --dxf floorplan.dxf --csv floorplan.csv --out out/
+
+# Textured Blender scene with the roof cut away, zones overlaid, rendered views
+python warehouse3d/build_blender_scene.py scan.obj --layout out/ --out out/
+# If the textures were renamed (e.g. sent separately), let it match them by colour:
+python warehouse3d/build_blender_scene.py scan.obj --images tex/*.jpg --scan scan.laz --layout out/ --out out/
+```
+
+`layout_map.py` writes `orthophoto.png` (true-colour top view, roof removed),
+`stock_height.png`, `layout_report.md/json`, `zones.json` and `layout_grid.npz`.
+`build_blender_scene.py` writes `warehouse_scan.blend`, plus `render_top.png` and
+two cut-away views.
+
+Stock means anything between 0.15 m and `--stock-cap` (default 3.3 m) above the
+local floor. Higher points are treated as roof, and surfaces that carry on past
+the cap are treated as walls or columns. That suits hand-stacked cartons and
+pallets. In a racked warehouse, set `--stock-cap` just below the ceiling.
+
 ## Outputs
 
 - `warehouse_scaled.blend`: metres, floor at z=0. Scans show as points, meshes as meshes.
