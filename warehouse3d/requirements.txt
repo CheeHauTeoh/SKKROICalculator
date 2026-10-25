@@ -1,0 +1,4 @@
+bpy==5.2.3
+numpy
+scipy
+requests
