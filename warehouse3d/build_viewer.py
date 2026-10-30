@@ -73,8 +73,6 @@ def model_files(obj, images, scan, floor_z, out, texture_width=2048):
     (out / "model").mkdir(parents=True, exist_ok=True)
     manifest, tris = [], 0
     for name, faces in groups:
-        if name not in textures:
-            continue
         f = np.array(faces)
         uniq, inv = np.unique(f.reshape(-1, 2), axis=0, return_inverse=True)
         p = verts[uniq[:, 0] - 1]
@@ -82,16 +80,22 @@ def model_files(obj, images, scan, floor_z, out, texture_width=2048):
         pos = np.round(np.column_stack((p[:, 0], p[:, 1], p[:, 2] - floor_z)) * 500).astype(np.int16)
         uv = np.round(np.clip(t, 0, 1) * 65535).astype(np.uint16)
         idx = inv.reshape(-1).astype(np.uint16 if len(uniq) < 65536 else np.uint32)
-        (out / "model" / f"{name}.txt").write_text(base64.b64encode(pos.tobytes() + uv.tobytes() + idx.tobytes()).decode())
-        image = Image.open(textures[name]).convert("RGB")
-        if image.size[0] > texture_width:
-            image = image.resize((texture_width, round(image.size[1] * texture_width / image.size[0])), Image.LANCZOS)
-        image.save(out / "model" / f"{name}.jpg", quality=80, optimize=True)
-        manifest.append({"name": name, "bin": f"{name}.txt", "tex": f"{name}.jpg", "verts": int(len(uniq)),
-                         "tris": int(len(f)), "index32": bool(len(uniq) >= 65536)})
+        blob = pos.tobytes() + uv.tobytes() + idx.tobytes()
+        if name not in textures:
+            # Texture image missing: ship per-vertex colours from the nearest LiDAR point instead.
+            blob += scene_tools.point_colours(p, scan).astype(np.uint8).tobytes()
+        (out / "model" / f"{name}.txt").write_text(base64.b64encode(blob).decode())
+        if name in textures:
+            image = Image.open(textures[name]).convert("RGB")
+            if image.size[0] > texture_width:
+                image = image.resize((texture_width, round(image.size[1] * texture_width / image.size[0])), Image.LANCZOS)
+            image.save(out / "model" / f"{name}.jpg", quality=80, optimize=True)
+        manifest.append({"name": name, "bin": f"{name}.txt", "tex": f"{name}.jpg" if name in textures else None,
+                         "verts": int(len(uniq)),
+                         "tris": int(len(f)), "index32": bool(len(uniq) >= 65536), "vcolor": name not in textures})
         tris += len(f)
     (out / "model" / "manifest.json").write_text(json.dumps(manifest))
-    return len(manifest), tris
+    return len(manifest), tris, sum(1 for name, _ in groups if name in textures)
 
 
 def fmt(v, digits=0):
@@ -120,7 +124,7 @@ def main():
     points_b64, point_count, floor_z = point_payload(args.scan, grid, args.stock_cap)
     import laspy
     raw_points = laspy.read(args.scan).header.point_count
-    materials, tris = model_files(args.obj, args.images, args.scan, floor_z, out)
+    materials, tris, textured = model_files(args.obj, args.images, args.scan, floor_z, out)
 
     floor = total["floor_area_m2"]
     walls = max(0.0, floor - total["stock_footprint_m2"] - total["free_floor_m2"] - total["not_scanned_m2"])
@@ -162,8 +166,9 @@ def main():
     values = {
         "__TITLE__": e(notes["title"]), "__EYEBROW__": e(notes.get("eyebrow", "Phone LiDAR scan · current layout")),
         "__LEDE__": e(notes["lede"]), "__META__": meta, "__FIGURES__": figures, "__COVER__": cover,
-        "__MODEL_CAPTION__": e(f"Polycam's textured mesh ({fmt(tris)} triangles, {materials} photo textures) "
-                               f"or the {fmt(point_count)}-point cloud."),
+        "__MODEL_CAPTION__": e(f"Polycam's textured mesh ({fmt(tris)} triangles, {textured} photo textures"
+                               + (f"; {materials - textured} parts coloured from the point cloud because their texture images were not supplied"
+                                  if textured < materials else "") + f") or the {fmt(point_count)}-point cloud."),
         "__NOTES_SHOWS__": bullets(notes.get("shows", [])), "__NOTES_METHOD__": bullets(notes.get("method", [])),
         "__FOOT__": e(notes.get("foot", "")),
         "__IMG_HEIGHT__": jpeg_data_uri(layout / "stock_height.png", 1800),
@@ -179,7 +184,7 @@ def main():
     (out / "index.html").write_text(page)
     size = sum(f.stat().st_size for f in out.rglob("*") if f.is_file())
     print(f"Wrote {out / 'index.html'} ({(out / 'index.html').stat().st_size / 1e6:.1f} MB page, {size / 1e6:.1f} MB total), "
-          f"{point_count:,} points, {materials} textured parts, {tris:,} triangles")
+          f"{point_count:,} points, {textured} of {materials} parts textured, {tris:,} triangles")
 
 
 if __name__ == "__main__":

@@ -206,6 +206,16 @@ warehouse and evaluate the space.
   many long walls equally well. If the best candidates score within 0.1 of each
   other, the fit is ambiguous. Don't accept it; ask me where the area is or for
   an overlapping rescan.
+- Scan 03 (a 36 m hall) did not match the baseline or scan 02: overlap 0.31,
+  RMS 0.27 m, interior walls in conflict. Treat it as a separate hall until I
+  say where it is. Its zone C is a stair space under a 3.3 m ceiling, so its
+  "stock" figures are not stock.
+- Texture images often arrive partially (scan 03: 5 of 10). The scripts match
+  what arrived by colour and keep only confident matches (error ≤ 25, at least 15
+  better than the runner-up). The rest are coloured from the nearest LiDAR point
+  (`scan_rgb` in Blender, `vcolor` in the viewer). Ask me for the missing images.
+- Floor plan images sent inline in chat don't reach disk. Ask me to attach the
+  PNG/PDF export as a file if it should be archived.
 - The World Labs API (`api.worldlabs.ai`) is blocked by this environment's
   network policy. Generative world models invent geometry, so don't use them
   for measurement.

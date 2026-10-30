@@ -352,10 +352,21 @@ function buildViewer() {
       g.setAttribute("position", new THREE.BufferAttribute(pos, 3));
       g.setAttribute("uv", new THREE.BufferAttribute(uv, 2, true));
       g.setIndex(new THREE.BufferAttribute(idx, 1));
-      const tex = await new Promise((ok, fail) => loader.load("model/" + part.tex, ok, undefined, fail));
-      tex.encoding = THREE.sRGBEncoding;
-      tex.anisotropy = 4;
-      const m = new THREE.MeshBasicMaterial({ map: tex, side: THREE.DoubleSide, clippingPlanes: [roofPlane] });
+      let m;
+      if (part.vcolor) {
+        // No photo texture for this part: per-vertex colours from the point cloud (sRGB -> linear).
+        const idxBytes = part.tris * 3 * (part.index32 ? 4 : 2);
+        const rgb = new Uint8Array(buf, n * 10 + idxBytes, n * 3);
+        const col = new Float32Array(n * 3);
+        for (let i = 0; i < n * 3; i++) col[i] = Math.pow(rgb[i] / 255, 2.2);
+        g.setAttribute("color", new THREE.BufferAttribute(col, 3));
+        m = new THREE.MeshBasicMaterial({ vertexColors: true, side: THREE.DoubleSide, clippingPlanes: [roofPlane] });
+      } else {
+        const tex = await new Promise((ok, fail) => loader.load("model/" + part.tex, ok, undefined, fail));
+        tex.encoding = THREE.sRGBEncoding;
+        tex.anisotropy = 4;
+        m = new THREE.MeshBasicMaterial({ map: tex, side: THREE.DoubleSide, clippingPlanes: [roofPlane] });
+      }
       meshMaterials.push(m);
       model.add(new THREE.Mesh(g, m));
       done++;

@@ -118,8 +118,11 @@ def pack_bits(mask):
     return base64.b64encode(np.packbits(mask.astype(np.uint8).ravel()).tobytes()).decode()
 
 
-def make_mesh(name, verts, uvs, faces_v, faces_t, faces_m, materials, origin):
-    """Mesh object from a subset of OBJ faces, positioned so its origin sits at `origin`."""
+def make_mesh(name, verts, uvs, faces_v, faces_t, faces_m, materials, origin, colours=None):
+    """Mesh object from a subset of OBJ faces, positioned so its origin sits at `origin`.
+
+    `colours` (uint8 RGB per OBJ vertex) adds a 'scan_rgb' attribute for parts without a texture.
+    """
     used, remap = np.unique(faces_v, return_inverse=True)
     local = verts[used] - origin
     mesh = bpy.data.meshes.new(name)
@@ -136,6 +139,8 @@ def make_mesh(name, verts, uvs, faces_v, faces_t, faces_m, materials, origin):
     uv_layer.data.foreach_set("uv", uvs[faces_t.ravel()].astype(np.float32).ravel())
     mesh.update(calc_edges=True)
     mesh.validate()
+    if colours is not None:
+        scene_tools.add_colour_attribute(mesh, colours[used])
     for mat in materials:
         mesh.materials.append(mat)
     obj = bpy.data.objects.new(name, mesh)
@@ -292,7 +297,11 @@ def main():
     bpy.ops.wm.read_factory_settings(use_empty=True)
     scene = bpy.context.scene
     scene.unit_settings.system = "METRIC"
+    missing = [name for name, _ in groups if name not in textures]
+    # Parts whose texture image is missing take the colour of the nearest LiDAR point.
+    colours = scene_tools.point_colours(verts + [0, 0, floor_z], args.scan) if missing and args.scan else None
     materials = [scene_tools.unlit_material(f"{name}_scan", textures[name]) if name in textures
+                 else scene_tools.point_colour_material(f"{name}_pointcolour") if colours is not None
                  else colour_material(name, (0.7, 0.7, 0.7, 1)) for name, _ in groups]
 
     # All faces with their material.
@@ -328,7 +337,7 @@ def main():
     rest = face_tile < 0
     for name, sel, coll in (("Building scan", rest & ~roof, building), ("Roof scan", rest & roof, roof_col)):
         if sel.any():
-            obj = make_mesh(name, verts, uvs, fv[sel], ft[sel], fm[sel], materials, np.zeros(3))
+            obj = make_mesh(name, verts, uvs, fv[sel], ft[sel], fm[sel], materials, np.zeros(3), colours)
             obj.color = (0.75, 0.77, 0.8, 1)
             coll.objects.link(obj)
 
@@ -346,7 +355,7 @@ def main():
         counters[zone] = counters.get(zone, 0) + 1
         name = f"Stack {zone}-{counters[zone]:02d}"
         obj = make_mesh(name, verts, uvs, fv[sel], ft[sel], fm[sel], materials,
-                        np.array([tile["centre"][0], tile["centre"][1], 0.0]))
+                        np.array([tile["centre"][0], tile["centre"][1], 0.0]), colours)
         obj["wh_stack"], obj["wh_kind"] = True, "stack"
         obj["wh_volume"] = round(tile["volume"], 3)
         obj["wh_scanned_height"] = round(tile["height"], 2)

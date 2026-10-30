@@ -40,7 +40,7 @@ def read_obj_faces(path):
     return np.column_stack((v[:, 0], -v[:, 2], v[:, 1])), np.array(uvs, float), groups
 
 
-def match_textures(obj_path, scan_path, images, samples=4000):
+def match_textures(obj_path, scan_path, images, samples=4000, max_error=25.0):
     """Pick the image for each material whose colours best match the point cloud."""
     import laspy
     from PIL import Image
@@ -76,9 +76,19 @@ def match_textures(obj_path, scan_path, images, samples=4000):
     rows, cols = linear_sum_assignment(cost)
     result = {}
     for r, c in zip(rows, cols):
-        runner_up = np.sort(cost[r])[1]
+        others = np.delete(cost[r], c)
+        runner_up = others.min() if len(others) else float("inf")
+        # A true match sits far below the alternatives (~5-10 vs 60+). When images
+        # are missing, the leftover materials only get weak matches: leave them untextured.
+        if cost[r, c] > max_error or runner_up - cost[r, c] < 15:
+            print(f"  {groups[r][0]}: no confident match (best {pathlib.Path(images[c]).name} at {cost[r, c]:.1f}, "
+                  f"next {runner_up:.1f}) - left untextured")
+            continue
         result[groups[r][0]] = str(images[c])
         print(f"  {groups[r][0]} -> {pathlib.Path(images[c]).name} (colour error {cost[r, c]:.1f}, next best {runner_up:.1f})")
+    missing = [name for name, _ in groups if name not in result]
+    if missing:
+        print(f"  No texture for {', '.join(missing)}")
     return result
 
 
@@ -118,7 +128,56 @@ def unlit_material(name, image_path):
     return mat
 
 
-def import_scan(obj_path, textures):
+def grey_material(name):
+    mat = bpy.data.materials.new(name)
+    mat.diffuse_color = (0.59, 0.6, 0.61, 1)
+    mat.use_nodes = True
+    nodes = mat.node_tree.nodes
+    nodes.clear()
+    emit = nodes.new("ShaderNodeEmission")
+    emit.inputs["Color"].default_value = (0.59, 0.6, 0.61, 1)
+    out = nodes.new("ShaderNodeOutputMaterial")
+    mat.node_tree.links.new(emit.outputs[0], out.inputs["Surface"])
+    return mat
+
+
+def point_colours(xyz, laz):
+    """Colour of the nearest LiDAR point for each vertex (uint8 RGB), for mesh parts without a texture."""
+    import laspy
+    from scipy.spatial import cKDTree
+
+    las = laspy.read(str(laz))
+    pts = np.column_stack((las.x, las.y, las.z))
+    rgb = np.column_stack((las.red, las.green, las.blue)).astype(np.float64)
+    rgb = (rgb / (256.0 if rgb.max() > 255 else 1.0)).clip(0, 255).astype(np.uint8)
+    _, idx = cKDTree(pts).query(xyz, k=1)
+    return rgb[idx]
+
+
+def add_colour_attribute(mesh, rgb):
+    """Per-vertex 'scan_rgb' colour attribute from uint8 RGB."""
+    attr = mesh.color_attributes.new("scan_rgb", "BYTE_COLOR", "POINT")
+    rgba = np.column_stack((rgb / 255.0, np.ones(len(rgb)))).astype(np.float32)
+    attr.data.foreach_set("color_srgb", rgba.ravel())
+
+
+def point_colour_material(name):
+    """Shows the 'scan_rgb' attribute unlit (texture image missing; colours come from the point cloud)."""
+    mat = bpy.data.materials.new(name)
+    mat.diffuse_color = (0.59, 0.6, 0.61, 1)
+    mat.use_nodes = True
+    nodes = mat.node_tree.nodes
+    nodes.clear()
+    attr = nodes.new("ShaderNodeAttribute")
+    attr.attribute_name = "scan_rgb"
+    emit = nodes.new("ShaderNodeEmission")
+    out = nodes.new("ShaderNodeOutputMaterial")
+    mat.node_tree.links.new(attr.outputs["Color"], emit.inputs["Color"])
+    mat.node_tree.links.new(emit.outputs[0], out.inputs["Surface"])
+    return mat
+
+
+def import_scan(obj_path, textures, laz=None):
     bpy.ops.wm.obj_import(filepath=str(obj_path))  # Y-up OBJ -> Blender Z-up
     objects = [o for o in bpy.context.selected_objects if o.type == "MESH"]
     for obj in objects:
@@ -126,6 +185,10 @@ def import_scan(obj_path, textures):
             base = slot.material.name.split(".")[0] if slot.material else None
             if base in textures:
                 slot.material = unlit_material(f"{base}_scan", textures[base])
+            elif slot.material:
+                # Texture image not supplied: colour from the point cloud if we have it, else plain grey
+                # (instead of Blender's missing-image pink).
+                slot.material = point_colour_material(f"{base}_pointcolour") if laz else grey_material(f"{base}_untextured")
     bpy.ops.object.select_all(action="DESELECT")
     for obj in objects:
         obj.select_set(True)
@@ -135,6 +198,10 @@ def import_scan(obj_path, textures):
     bpy.ops.object.transform_apply(location=True, rotation=True, scale=True)
     scan = bpy.context.view_layer.objects.active
     scan.name = "Scan (full)"
+    if laz and any(m and m.name.endswith("_pointcolour") for m in scan.data.materials):
+        xyz = np.empty(len(scan.data.vertices) * 3)
+        scan.data.vertices.foreach_get("co", xyz)
+        add_colour_attribute(scan.data, point_colours(xyz.reshape(-1, 3), laz))
     return scan
 
 
@@ -249,7 +316,7 @@ def main():
         textures = match_textures(args.obj, args.scan, args.images)
     else:
         textures = textures_from_mtl(args.obj)
-    scan = import_scan(args.obj, textures)
+    scan = import_scan(args.obj, textures, laz=args.scan)
 
     floor_z = float(np.median(np.load(pathlib.Path(args.layout) / "layout_grid.npz")["floor"])) \
         if args.layout else float(np.percentile([v.co.z for v in scan.data.vertices], 1))

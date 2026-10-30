@@ -240,6 +240,127 @@
    },
    "notes": "Narrow bay 19.2 x 4.1 m, doorway in the south wall opening to outside, breeze-block band on the west wall. Textures arrived as 2000 px chat images (Polycam originals 4096 px) and were matched to materials by colour (errors 6.6-10.4 vs 62+ for the next best).",
    "viewer": "https://claude.ai/artifact/MyYwhnXDS1e7Jg1NiyNGvn"
+  },
+  {
+   "name": "scan_03_hall",
+   "captured": "2026-10-30",
+   "app": "Polycam, iPhone LiDAR",
+   "archive": "https://claude.ai/artifact/VpcxiVxSFVwEjmEy47fG9F",
+   "files": [
+    {
+     "name": "source/2026-10-30.laz",
+     "bytes": 18337430,
+     "sha256": "3d38455b29dc4713479f2280d69d0c9270899881234f43b0fd982b8c314284a4"
+    },
+    {
+     "name": "source/2026-10-30.mtl",
+     "bytes": 871,
+     "sha256": "a01dec3a9263b496ff8e4c35116e4d86dcfe525b4f5ad99e9d8b7bd15a1e000b"
+    },
+    {
+     "name": "source/2026-10-30.obj",
+     "bytes": 29195074,
+     "sha256": "0d3d686274b3d6a0cc9129950ed444bd1d0338dbda2630991ec2e780aef8c7d4"
+    },
+    {
+     "name": "source/Polycam_Floor_Plan_2026-10-30.csv",
+     "bytes": 2351,
+     "sha256": "9130e5bbd7d3c1174dd123c07cde2ffe24326e61d2e075503b7d2e830a7de6ca"
+    },
+    {
+     "name": "source/Polycam_Floor_Plan_2026-10-30.dxf",
+     "bytes": 235076,
+     "sha256": "bc2971d4d133f79861b4cc61232b8f51a5b7748af46f1537a11e2ee6af7aa03b"
+    },
+    {
+     "name": "source/textures/154df2d2329d629cafe294117a85b24a.jpg",
+     "bytes": 491576,
+     "sha256": "20b542807b81bb6e331037bd21817229651c7319e8f526ba93481b63e60ffa81"
+    },
+    {
+     "name": "source/textures/2935a1bf0730eba61e069fd2c568d8c3.jpg",
+     "bytes": 505879,
+     "sha256": "89231e0d788e7f5035281ad7ac06dfb2fea571c6d8ac766cae576e9db92b97c8"
+    },
+    {
+     "name": "source/textures/96a8a145c7899344f4b16f62e7e6bd9c.jpg",
+     "bytes": 488570,
+     "sha256": "9c091f59a910949f82ecfbf67da9dc86b0d8c29b21181559724d74181f915f01"
+    },
+    {
+     "name": "source/textures/b7a1ead975fef47c32134eb0eae483e7.jpg",
+     "bytes": 380587,
+     "sha256": "7b1531a0adc08e47c19461f9ab4663cec5e8164909b0789f8d4874ad47325931"
+    },
+    {
+     "name": "source/textures/ce5abdab6978007e7206accf58ff9a8f.jpg",
+     "bytes": 485096,
+     "sha256": "ca5e26fc0f3d580b7c571cff70d1cf35d23fdbac4951285c37d8921f05201dae"
+    }
+   ],
+   "registration": {
+    "status": "not registered",
+    "reason": "Walls do not match the baseline (best overlap 0.31, ICP RMS 0.27-0.29 m against a 0.05 m limit, top four candidates within 0.02 of each other, 7-9% of matched walls land on baseline open floor) or scan 02 (overlap at most 0.22). The interior walls conflict, so this is most likely a different hall.",
+    "top_candidates": [
+     {
+      "angle_deg": -0.55,
+      "shift_m": [
+       -2.985,
+       1.92
+      ],
+      "plan_wall_overlap": 0.309,
+      "open_floor_on_walls": 0.077,
+      "shared_area_m2": 145.0,
+      "icp_rms_m": 0.283
+     },
+     {
+      "angle_deg": 0.08,
+      "shift_m": [
+       3.289,
+       2.104
+      ],
+      "plan_wall_overlap": 0.293,
+      "open_floor_on_walls": 0.079,
+      "shared_area_m2": 134.0,
+      "icp_rms_m": 0.276
+     },
+     {
+      "angle_deg": -0.94,
+      "shift_m": [
+       -5.119,
+       1.911
+      ],
+      "plan_wall_overlap": 0.293,
+      "open_floor_on_walls": 0.068,
+      "shared_area_m2": 125.0,
+      "icp_rms_m": 0.272
+     }
+    ],
+    "needs": "Where this hall is relative to the main building and the scan 02 bay, or a rescan that overlaps a scanned area by 2-3 m including a corner or column."
+   },
+   "summary": {
+    "floor_area_m2": 290.6,
+    "stock_footprint_m2": 107.2,
+    "free_floor_m2": 110.1,
+    "not_scanned_m2": 15.9,
+    "stock_cover_pct": 37.0,
+    "stack_height_avg_m": 1.63,
+    "stock_volume_m3": 174.0,
+    "stock_outside_floor_plan_m2": 19.9,
+    "zones": 5,
+    "stacks": 173,
+    "polycam_exterior_m2": 295.4,
+    "polycam_ceiling_m": "3.3-6.9"
+   },
+   "missing_textures": [
+    "Material_2",
+    "Material_3",
+    "Material_4",
+    "Material_6",
+    "Material_9"
+   ],
+   "notes": "Long hall, Polycam main room 36.2 x 8.4 m bounding box, 6.2 m ceiling; side room (zone B) 8.9 x 3.8 m with 3.7 m ceiling. Zone C (3.6 x 1.6 m, ceiling 3.3 m) holds stairs per Polycam, so its 3.19 m average stack is probably stairs or ceiling, not stock. A forklift is parked in zone A. Only 5 of 10 textures were received (2000 px chat images, matched by colour); the other parts are coloured from the LiDAR points. Polycam floor plan image not archived: it arrived as a chat image, not a file.",
+   "viewer": "https://claude.ai/artifact/33LQaS4YFgDNpbPBgCSkJt"
   }
  ]
 }
