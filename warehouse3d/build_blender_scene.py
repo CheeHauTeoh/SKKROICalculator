@@ -266,10 +266,12 @@ def main():
     ys = [v.co.y for v in cut.data.vertices]
     cx, cy = (min(xs) + max(xs)) / 2, (min(ys) + max(ys)) / 2
     span = max(max(xs) - min(xs), (max(ys) - min(ys)) * 16 / 9) * 1.04
+    reach = max(0.35, math.hypot(max(xs) - min(xs), max(ys) - min(ys)) / 40.0)
     top = add_camera("Top view", (cx, cy, floor_z + 30), (cx, cy, floor_z), ortho_scale=span)
     views = {
-        "south_west": add_camera("Cutaway SW", (cx - 22, cy - 22, floor_z + 16), (cx, cy, floor_z)),
-        "north_east": add_camera("Cutaway NE", (cx + 22, cy + 22, floor_z + 16), (cx, cy, floor_z)),
+        # 22 m out and 16 m up suits the 37 m baseline building; scale with the scan's size.
+        "south_west": add_camera("Cutaway SW", (cx - 22 * reach, cy - 22 * reach, floor_z + 16 * reach), (cx, cy, floor_z)),
+        "north_east": add_camera("Cutaway NE", (cx + 22 * reach, cy + 22 * reach, floor_z + 16 * reach), (cx, cy, floor_z)),
     }
 
     bpy.context.preferences.filepaths.save_version = 0

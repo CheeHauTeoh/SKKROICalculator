@@ -240,6 +240,15 @@ def fade(ax, grids):
     ax.imshow(np.transpose(veil, (1, 0, 2)), origin="lower", extent=extent(grids), interpolation="nearest")
 
 
+def figure_size(grids):
+    """Figure size that follows the scan's shape, so long narrow bays aren't squashed."""
+    x0, x1, y0, y1 = extent(grids)
+    aspect = (x1 - x0) / max(y1 - y0, 1e-6)
+    if aspect >= 1.6:
+        return (16, max(5.0, 16 / aspect + 1.0))
+    return (max(5.0, 9 * aspect + 2.5), 9)
+
+
 def finish_axes(ax, grids, title):
     shape = grids["top"].shape
     x0, y0 = grids["origin"]
@@ -261,7 +270,7 @@ def extent(grids):
 
 def plot_orthophoto(path, grids, walls, zones):
     colour, _ = fill_colour_gaps(grids["colour"], grids["seen"])
-    fig, ax = plt.subplots(figsize=(16, 8.5), dpi=150)
+    fig, ax = plt.subplots(figsize=figure_size(grids), dpi=150)
     ax.imshow(np.transpose(colour, (1, 0, 2)), origin="lower", extent=extent(grids), interpolation="nearest")
     fade(ax, grids)
     draw_plan(ax, walls, zones, grids)
@@ -275,7 +284,7 @@ def plot_heights(path, grids, walls, zones, stock_cap):
     top = grids["top"]
     base = np.zeros(top.shape + (4,))
     base[grids["free"]] = (0.93, 0.95, 0.97, 1)  # free floor
-    fig, ax = plt.subplots(figsize=(16, 8.5), dpi=150)
+    fig, ax = plt.subplots(figsize=figure_size(grids), dpi=150)
     ax.imshow(np.transpose(base, (1, 0, 2)), origin="lower", extent=extent(grids), interpolation="nearest")
     ramp = ListedColormap(plt.get_cmap("YlOrRd")(np.linspace(0.15, 1, 256)))
     heights = np.ma.masked_where(~grids["stock"], top)

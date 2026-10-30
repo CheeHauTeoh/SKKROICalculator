@@ -41,6 +41,11 @@ warehouse and evaluate the space.
     the floor, roof clearance and aisle access, with per-zone totals.
   - `archive_scan.py` / `restore_baseline.py`: package a scan's files into a
     private artifact, and restore them with SHA-256 checks.
+  - `register_scan.py`: finds a scan's place in the master frame from walls
+    only (rotation search + cross-correlation + ICP), reports overlap, open
+    floor landing on walls, shared area and RMS, and applies the acceptance rule.
+  - `scans/registry.json`: every scan so far, with its archive URL, status and
+    figures. **Read it first**; it is newer than this prompt.
   - `MASTER_SCAN_PROMPT.md`: this prompt.
 - **The repository is public.** Never commit scan data, renders, the street
   address or anything showing the inside of the warehouse. `out*/` is gitignored.
@@ -191,6 +196,12 @@ warehouse and evaluate the space.
   strip along them so walls don't count as stock.
 - Cutting the textured mesh into stacks needs a stored footprint per stack
   (`wh_footprint`), because the mesh edges are ragged and would create false overlaps.
+- Registration pitfalls found on scan 02: (1) under low roofs or tall stock,
+  "tall surface" structure from the point cloud floods whole bays, so use
+  `--plan-walls-only` and check the overlay image; (2) a plain long bay matches
+  many long walls equally well. If the best candidates score within 0.1 of each
+  other, the fit is ambiguous. Don't accept it; ask me where the area is or for
+  an overlapping rescan.
 - The World Labs API (`api.worldlabs.ai`) is blocked by this environment's
   network policy. Generative world models invent geometry, so don't use them
   for measurement.

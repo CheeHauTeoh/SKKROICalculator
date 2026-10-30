@@ -1,0 +1,243 @@
+{
+ "master_frame": "scan_01_baseline LAZ/DXF coordinates (metres, Z up)",
+ "scans": [
+  {
+   "name": "scan_01_baseline",
+   "captured": "2026-10-25",
+   "app": "Polycam, iPhone LiDAR, Space mode",
+   "archive": "https://claude.ai/artifact/SBBhTLMvH2ZcD9xeVf34hE",
+   "files": [
+    {
+     "name": "source/2026-10-25.laz",
+     "bytes": 16947280,
+     "sha256": "a9f8301e2cf9d54a539a0442c10d3646059f59dc6c20cd4239484b5f872d850e"
+    },
+    {
+     "name": "source/2026-10-25.obj",
+     "bytes": 27350010,
+     "sha256": "213c36a8ef60de9a4a1b375920e49fe3e90ad72027c0fa8857f63532a0145ca5"
+    },
+    {
+     "name": "source/2026-10-25.mtl",
+     "bytes": 696,
+     "sha256": "018e5c1d514044fe2d239bd416414abf2e7cfaa836a5f0ff69ddd3f52ebe1759"
+    },
+    {
+     "name": "source/textures/c859eda8a3c279e6e7eaf2ec45b3b90f.jpg",
+     "bytes": 2457639,
+     "sha256": "e3759a034a6bffc4ef878afb6479c883aa94bd689e1ad4a2bac7530cb3942775"
+    },
+    {
+     "name": "source/textures/d718adbb58788fef56d5989feb194969.jpg",
+     "bytes": 2736993,
+     "sha256": "9151703b3bcf1f9e6a762e6baeaa52a17fe13963ac80f39b73ea35724975d1a1"
+    },
+    {
+     "name": "source/textures/86768b46242dc2940a341a76a438d5a5.jpg",
+     "bytes": 2423149,
+     "sha256": "7bbbe43fe41a4d84a21074261d84e68f3a92d7196836411fde4dc752e788d1ae"
+    },
+    {
+     "name": "source/textures/78594ffcbd4805319aa32a779c8be821.jpg",
+     "bytes": 2454502,
+     "sha256": "8dc0d14eaf7b706ea61d0c950db3538f5cae524ec292f1ca2bcae5f4b1554262"
+    },
+    {
+     "name": "source/textures/7392b4a54eaa50d633795067edcc2cb4.jpg",
+     "bytes": 2437534,
+     "sha256": "7cdd9f646d8c124422cfa7eee2fd506e21dc80f4305b8af066dd81d4be8678b4"
+    },
+    {
+     "name": "source/textures/0dc6078f1f5f111b866ac57e0b8cd46d.jpg",
+     "bytes": 2441219,
+     "sha256": "b33f555ed6cce114b76efec1440423518a42a69f20ac3dc719d76a21ee243e9a"
+    },
+    {
+     "name": "source/textures/0d6b8baf30573b6aa9a20e74846e9f0e.jpg",
+     "bytes": 2279003,
+     "sha256": "c22f37727a54d931e902d38f9fe10a067cb6e4e7230e48e31bdfd182832138ed"
+    },
+    {
+     "name": "source/textures/27ebd28bb8129dadb2707fd8d795fb14.jpg",
+     "bytes": 962394,
+     "sha256": "48f83888680be13b16d061003a8133e82978d175839f129de56040d2f9e7c99e"
+    },
+    {
+     "name": "source/Polycam_Floor_Plan_2026-10-25.dxf",
+     "bytes": 162389,
+     "sha256": "abde70601c8a98e3c14112fa5fdd42b8a8b28ee77837c4d1594934c41bd51390"
+    },
+    {
+     "name": "source/Polycam_Floor_Plan_2026-10-25.csv",
+     "bytes": 3156,
+     "sha256": "eec89f8194ee9f7e15392210355d4f4a81ae9bfb1f9b3f7259148fc89424d31e"
+    },
+    {
+     "name": "source/Polycam_Floor_Plan_2026-10-25.pdf",
+     "bytes": 506839,
+     "sha256": "8258d6daf7e35c0952f8876fa4bd78df938d449b882b4521c9b90b72e90733e9"
+    },
+    {
+     "name": "source/Polycam_Floor_Plan_2026-10-25.png",
+     "bytes": 437203,
+     "sha256": "27b6af333c8b7d16c5f094086f60c1aab81b8154374c4e3c43a3420ee7f56946"
+    }
+   ],
+   "registration": {
+    "status": "master",
+    "matrix": [
+     [
+      1,
+      0,
+      0,
+      0
+     ],
+     [
+      0,
+      1,
+      0,
+      0
+     ],
+     [
+      0,
+      0,
+      1,
+      0
+     ],
+     [
+      0,
+      0,
+      0,
+      1
+     ]
+    ]
+   },
+   "summary": {
+    "floor_area_m2": 391.1,
+    "stock_footprint_m2": 124.9,
+    "free_floor_m2": 142.8,
+    "not_scanned_m2": 59.8,
+    "stock_cover_pct": 32.0,
+    "stack_height_avg_m": 1.34,
+    "stock_volume_m3": 167.0,
+    "stock_outside_floor_plan_m2": 26.2,
+    "zones": 6,
+    "stacks": 217
+   },
+   "notes": "Main building, zones A-F. Floor not level (north-west +0.2-0.3 m). East wall slanted but drawn straight by Polycam. Zone E seen only from outside."
+  },
+  {
+   "name": "scan_02_bay",
+   "captured": "2026-10-30",
+   "app": "Polycam, iPhone LiDAR",
+   "archive": "https://claude.ai/artifact/UHvjDgr9tyTF69PLXrqYBN",
+   "files": [
+    {
+     "name": "source/2026-10-30.laz",
+     "bytes": 11038348,
+     "sha256": "137d09c20c639c661a69960c54089debaacef0abbd86119c4e8f6c839ada585e"
+    },
+    {
+     "name": "source/2026-10-30.mtl",
+     "bytes": 348,
+     "sha256": "52fd71ededa3737f32ca29bd84c7d6fc4a55a2a45bb4ca9e99df4b563854d7cd"
+    },
+    {
+     "name": "source/2026-10-30.obj",
+     "bytes": 17192760,
+     "sha256": "196c56a76351460c45f9dbebbca1c6c49d9e373387c14083ec25a34f5009ecd4"
+    },
+    {
+     "name": "source/Polycam_Floor_Plan_2026-10-30.csv",
+     "bytes": 1141,
+     "sha256": "f652540849da410ccd9a1262904fe2b87e4629fb78616d2edf18a7d74af83e53"
+    },
+    {
+     "name": "source/Polycam_Floor_Plan_2026-10-30.dxf",
+     "bytes": 38035,
+     "sha256": "11b56f4212323d2f986b238cc93e0533f16852e2e61c68d8fe3b9ee6e1cb80e2"
+    },
+    {
+     "name": "source/Polycam_Floor_Plan_2026-10-30.webp",
+     "bytes": 13400,
+     "sha256": "63d3079c268f960e6a551c57ebc1f77480111067e57816cb0de4302f4cf27256"
+    },
+    {
+     "name": "source/textures/1d32e4e0929c725c32c16a515b55f8f7.jpg",
+     "bytes": 500773,
+     "sha256": "28b67040405158b258a89c071b030d4fa0458e683896cfa8d2c7f29d07ead806"
+    },
+    {
+     "name": "source/textures/45dad4f3fe788c54a2051014220f68bb.jpg",
+     "bytes": 506983,
+     "sha256": "febac571199e3806c026eb198c1267a8e61a3975c860dd4399c695db7e712ad5"
+    },
+    {
+     "name": "source/textures/78327ce99e6faa83d81fafd6a219d213.jpg",
+     "bytes": 451347,
+     "sha256": "b7c1333ce9d6a422fa9cce8c9d494767a52c0efdf48564228ed90042dd6d9bb1"
+    },
+    {
+     "name": "source/textures/ac6f972149c153aaf4cfbcbbf3c41e3f.jpg",
+     "bytes": 502111,
+     "sha256": "ba55d93b931c7e020b6b0c0eaba3165267c04ef00399427d45e8e6c94a02cdad"
+    }
+   ],
+   "registration": {
+    "status": "not registered",
+    "reason": "No unambiguous match to the baseline walls: top candidates scored 0.43-0.52 in four different orientations, best ICP RMS 0.22 m (limit 0.05 m). A plain 19 x 4 m bay fits many long walls equally well.",
+    "top_candidates": [
+     {
+      "angle_deg": 86.22,
+      "shift_m": [
+       1.525,
+       5.67
+      ],
+      "plan_wall_overlap": 0.536,
+      "open_floor_on_walls": 0.0,
+      "shared_area_m2": 45.0,
+      "icp_rms_m": 0.242
+     },
+     {
+      "angle_deg": -87.55,
+      "shift_m": [
+       2.019,
+       5.901
+      ],
+      "plan_wall_overlap": 0.558,
+      "open_floor_on_walls": 0.011,
+      "shared_area_m2": 46.5,
+      "icp_rms_m": 0.271
+     },
+     {
+      "angle_deg": 86.47,
+      "shift_m": [
+       6.774,
+       5.664
+      ],
+      "plan_wall_overlap": 0.565,
+      "open_floor_on_walls": 0.021,
+      "shared_area_m2": 37.9,
+      "icp_rms_m": 0.263
+     }
+    ],
+    "needs": "Where this bay is relative to the main building, or a rescan that overlaps the baseline by 2-3 m including a corner or column."
+   },
+   "summary": {
+    "floor_area_m2": 75.1,
+    "stock_footprint_m2": 29.9,
+    "free_floor_m2": 20.8,
+    "not_scanned_m2": 6.6,
+    "stock_cover_pct": 40.0,
+    "stack_height_avg_m": 1.49,
+    "stock_volume_m3": 45.0,
+    "stock_outside_floor_plan_m2": 0.3,
+    "zones": 2,
+    "stacks": 42,
+    "polycam_exterior_m2": 77.5,
+    "polycam_ceiling_m": "3.8-5.6"
+   },
+   "notes": "Narrow bay 19.2 x 4.1 m, doorway in the south wall opening to outside, breeze-block band on the west wall. Textures arrived as 2000 px chat images (Polycam originals 4096 px) and were matched to materials by colour (errors 6.6-10.4 vs 62+ for the next best)."
+  }
+ ]
+}
