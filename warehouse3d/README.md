@@ -123,6 +123,22 @@ the **Warehouse** tab. It re-checks the layout as you move things and shows:
   photos and height colours, and to show or hide the roof, original positions,
   plan and building scan
 
+## Viewer page, registration and multi-scan work
+
+```bash
+# Interactive page: textured model, point cloud, maps, zone table (words from a notes JSON)
+python warehouse3d/build_viewer.py --scan scan.laz --obj scan.obj --layout out/ --notes notes.json --out viewer/
+# Add --inline for one HTML file that opens straight from disk
+# Place a scan in the master (baseline) frame from walls only
+python warehouse3d/register_scan.py --master-laz base.laz --master-dxf base.dxf --master-grid base_out/layout_grid.npz \
+    --scan-laz new.laz --scan-dxf new.dxf --scan-grid new_out/layout_grid.npz --out new_out/registration.json
+```
+
+`MASTER_SCAN_PROMPT.md` carries the project context for a Claude Code session;
+`COWORK_MASTER_PROMPT.md` does the same for Claude Cowork working on a local
+folder with one subfolder per scan. `scans/registry.json` lists every scan
+(no scan data).
+
 ## Outputs
 
 - `warehouse_scaled.blend`: metres, floor at z=0. Scans show as points, meshes as meshes.

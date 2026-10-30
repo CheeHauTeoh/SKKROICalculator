@@ -232,6 +232,8 @@ const ZONES = __ZONES__;
 const STATS = __STATS__;
 const POINT_COUNT = __POINT_COUNT__;
 const POINTS_B64 = "__POINTS__";
+// Set by build_viewer.py --inline: model files packed into the page so it opens from disk.
+const INLINE_MODEL = __INLINE_MODEL__;
 
 /* Zone schedule */
 (function () {
@@ -335,11 +337,11 @@ function buildViewer() {
   scene.add(model);
   const loading = document.getElementById("loading");
   async function loadModel() {
-    const parts = await (await fetch("model/manifest.json")).json();
+    const parts = INLINE_MODEL ? INLINE_MODEL.manifest : await (await fetch("model/manifest.json")).json();
     const loader = new THREE.TextureLoader();
     let done = 0;
     await Promise.all(parts.map(async part => {
-      const text = await (await fetch("model/" + part.bin)).text();
+      const text = INLINE_MODEL ? INLINE_MODEL.files[part.bin] : await (await fetch("model/" + part.bin)).text();
       const bytes = Uint8Array.from(atob(text.trim()), c => c.charCodeAt(0));
       const buf = bytes.buffer;
       const n = part.verts;
@@ -362,7 +364,7 @@ function buildViewer() {
         g.setAttribute("color", new THREE.BufferAttribute(col, 3));
         m = new THREE.MeshBasicMaterial({ vertexColors: true, side: THREE.DoubleSide, clippingPlanes: [roofPlane] });
       } else {
-        const tex = await new Promise((ok, fail) => loader.load("model/" + part.tex, ok, undefined, fail));
+        const tex = await new Promise((ok, fail) => loader.load(INLINE_MODEL ? INLINE_MODEL.files[part.tex] : "model/" + part.tex, ok, undefined, fail));
         tex.encoding = THREE.sRGBEncoding;
         tex.anisotropy = 4;
         m = new THREE.MeshBasicMaterial({ map: tex, side: THREE.DoubleSide, clippingPlanes: [roofPlane] });

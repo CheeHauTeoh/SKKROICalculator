@@ -13,6 +13,8 @@ The words on the page come from a notes JSON, so nothing is invented here:
 Usage:
     python build_viewer.py --scan scan.laz --obj scan.obj --layout out/ --notes notes.json --out viewer/
 Publish viewer/index.html with every file under viewer/model/ as supporting files.
+With --inline the model files are packed into index.html instead, so the page
+opens straight from disk (browsers block fetch() on file:// pages).
 """
 
 import argparse
@@ -98,6 +100,21 @@ def model_files(obj, images, scan, floor_z, out, texture_width=2048):
     return len(manifest), tris, sum(1 for name, _ in groups if name in textures)
 
 
+def inline_model(out):
+    """Move model/ into the page as JSON: geometry text as is, textures as data URIs."""
+    model = out / "model"
+    manifest = json.loads((model / "manifest.json").read_text())
+    files = {}
+    for part in manifest:
+        files[part["bin"]] = (model / part["bin"]).read_text()
+        if part.get("tex"):
+            files[part["tex"]] = "data:image/jpeg;base64," + base64.b64encode((model / part["tex"]).read_bytes()).decode()
+    for f in model.iterdir():
+        f.unlink()
+    model.rmdir()
+    return json.dumps({"manifest": manifest, "files": files})
+
+
 def fmt(v, digits=0):
     return f"{v:,.{digits}f}"
 
@@ -111,6 +128,7 @@ def main():
     p.add_argument("--notes", required=True, help="JSON with the page's words (see module help)")
     p.add_argument("--stock-cap", type=float, default=3.3)
     p.add_argument("--out", required=True)
+    p.add_argument("--inline", action="store_true", help="Pack the model into index.html (one file that opens from disk)")
     args = p.parse_args()
 
     out = pathlib.Path(args.out)
@@ -177,6 +195,7 @@ def main():
         "__IMG_SW__": jpeg_data_uri(renders["sw"], 1400), "__IMG_NE__": jpeg_data_uri(renders["ne"], 1400),
         "__ZONES__": json.dumps(zone_geo), "__STATS__": json.dumps(report),
         "__POINT_COUNT__": str(point_count), "__POINTS__": points_b64,
+        "__INLINE_MODEL__": inline_model(out) if args.inline else "null",
     }
     for key, value in values.items():
         assert key in page, key
