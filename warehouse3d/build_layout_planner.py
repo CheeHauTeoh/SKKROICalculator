@@ -282,7 +282,10 @@ def main():
     floor_z = float(np.median(grid["floor"]))
 
     print("Matching textures…")
-    textures = scene_tools.match_textures(args.obj, args.scan, args.images) if args.images else {}
+    textures = (scene_tools.match_textures(args.obj, args.scan, args.images) if args.images
+                else scene_tools.textures_from_mtl(args.obj))
+    if not textures:
+        print("WARNING: no textures found; stacks will be plain grey. Pass --images and --scan if they were renamed.")
     verts, uvs, groups = scene_tools.read_obj_faces(args.obj)
     verts = verts - [0, 0, floor_z]
 

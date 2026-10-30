@@ -82,6 +82,27 @@ def match_textures(obj_path, scan_path, images, samples=4000):
     return result
 
 
+def textures_from_mtl(obj_path):
+    """Material -> texture image from the OBJ's own MTL file (when the textures kept their names)."""
+    obj_path = pathlib.Path(obj_path)
+    textures = {}
+    for line in obj_path.read_text().splitlines()[:50]:
+        if line.startswith("mtllib"):
+            mtl = obj_path.parent / line.split(maxsplit=1)[1].strip()
+            if not mtl.exists():
+                return textures
+            current = None
+            for row in mtl.read_text().splitlines():
+                if row.startswith("newmtl"):
+                    current = row.split(maxsplit=1)[1].strip()
+                elif row.startswith("map_Kd") and current:
+                    image = mtl.parent / row.split(maxsplit=1)[1].strip()
+                    if image.exists():
+                        textures[current] = str(image)
+            break
+    return textures
+
+
 def unlit_material(name, image_path):
     """Show the scan's captured colours as-is (the texture already contains the lighting)."""
     mat = bpy.data.materials.new(name)
@@ -227,7 +248,7 @@ def main():
         print("Matching textures to materials:")
         textures = match_textures(args.obj, args.scan, args.images)
     else:
-        textures = {}
+        textures = textures_from_mtl(args.obj)
     scan = import_scan(args.obj, textures)
 
     floor_z = float(np.median(np.load(pathlib.Path(args.layout) / "layout_grid.npz")["floor"])) \
