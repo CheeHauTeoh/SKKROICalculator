@@ -259,7 +259,10 @@ def finish_axes(ax, grids, title):
     ax.set_yticks(np.arange(np.ceil(y0 / 5) * 5, y0 + shape[1] * grids["cell"], 5))
     ax.grid(color="#9fb3c8", linewidth=0.4, alpha=0.6)
     ax.set_xlabel("metres")
-    ax.set_title(title, loc="left", fontsize=13)
+    # Wrap long titles on narrow figures (long thin bays) so they aren't cut off.
+    import textwrap
+    width_chars = max(20, int(ax.figure.get_figwidth() * 7))
+    ax.set_title(textwrap.fill(title, width_chars), loc="left", fontsize=13)
 
 
 def extent(grids):

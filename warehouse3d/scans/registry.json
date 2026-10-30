@@ -124,7 +124,8 @@
     "zones": 6,
     "stacks": 217
    },
-   "notes": "Main building, zones A-F. Floor not level (north-west +0.2-0.3 m). East wall slanted but drawn straight by Polycam. Zone E seen only from outside."
+   "notes": "Main building, zones A-F. Floor not level (north-west +0.2-0.3 m). East wall slanted but drawn straight by Polycam. Zone E seen only from outside.",
+   "viewer": "https://claude.ai/artifact/GQVJYxTtSuQLP3Ky5MR6ZN"
   },
   {
    "name": "scan_02_bay",
@@ -237,7 +238,8 @@
     "polycam_exterior_m2": 77.5,
     "polycam_ceiling_m": "3.8-5.6"
    },
-   "notes": "Narrow bay 19.2 x 4.1 m, doorway in the south wall opening to outside, breeze-block band on the west wall. Textures arrived as 2000 px chat images (Polycam originals 4096 px) and were matched to materials by colour (errors 6.6-10.4 vs 62+ for the next best)."
+   "notes": "Narrow bay 19.2 x 4.1 m, doorway in the south wall opening to outside, breeze-block band on the west wall. Textures arrived as 2000 px chat images (Polycam originals 4096 px) and were matched to materials by colour (errors 6.6-10.4 vs 62+ for the next best).",
+   "viewer": "https://claude.ai/artifact/MyYwhnXDS1e7Jg1NiyNGvn"
   }
  ]
 }

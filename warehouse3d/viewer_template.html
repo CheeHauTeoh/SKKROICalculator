@@ -1,0 +1,472 @@
+<meta charset="utf-8">
+<title>__TITLE__</title>
+<meta name="claude:viewport-fit-sides" content="cover">
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Barlow+Condensed:wght@500;600;700&family=Public+Sans:wght@400;500;600&family=IBM+Plex+Mono:wght@400;500&display=swap">
+<style>
+/* Layout: site-survey sheet. Title block, key figures, one large map plate with tabs, zone schedule, method notes. */
+:root {
+  --bg: #eef1f3;          /* concrete floor */
+  --panel: #ffffff;
+  --ink: #17232e;
+  --muted: #566573;
+  --rule: #cfd6dc;
+  --accent: #d9620f;      /* safety orange */
+  --accent-ink: #ffffff;
+  --stock: #d9620f;
+  --free: #9fb8cc;
+  --gap: #e2e6e9;
+  --wall: #4a5865;
+  --plate: #ffffff;       /* map plates are printed on white in both themes */
+  --display: "Barlow Condensed", "Arial Narrow", "Roboto Condensed", sans-serif;
+  --body: "Public Sans", "Segoe UI", Roboto, Helvetica, Arial, sans-serif;
+  --mono: "IBM Plex Mono", ui-monospace, "SFMono-Regular", Menlo, Consolas, monospace;
+}
+@media (prefers-color-scheme: dark) {
+  :root:not([data-theme="light"]) {
+    --bg: #12181d; --panel: #1b232a; --ink: #e6ebef; --muted: #9aa8b4; --rule: #2e3943;
+    --accent: #f08a3c; --accent-ink: #12181d; --stock: #f08a3c; --free: #5f7f98; --gap: #2a333b; --wall: #a9b6c1;
+    color-scheme: dark;
+  }
+}
+:root[data-theme="dark"] {
+  --bg: #12181d; --panel: #1b232a; --ink: #e6ebef; --muted: #9aa8b4; --rule: #2e3943;
+  --accent: #f08a3c; --accent-ink: #12181d; --stock: #f08a3c; --free: #5f7f98; --gap: #2a333b; --wall: #a9b6c1;
+  color-scheme: dark;
+}
+* { box-sizing: border-box; }
+[hidden] { display: none !important; }
+body {
+  background: var(--bg); color: var(--ink); font-family: var(--body); font-size: 15px; line-height: 1.55;
+  padding-left: max(16px, env(safe-area-inset-left, 0px)); padding-right: max(16px, env(safe-area-inset-right, 0px));
+  padding-block: 28px 48px;
+}
+.wrap { max-width: 1180px; margin: 0 auto; display: grid; gap: 28px; }
+h1, h2, h3 { font-family: var(--display); font-weight: 600; letter-spacing: 0.01em; text-wrap: balance; margin: 0; }
+h1 { font-size: clamp(2.2rem, 5vw, 3.4rem); line-height: 1; }
+h2 { font-size: 1.6rem; line-height: 1.1; }
+p { margin: 0; max-width: 68ch; }
+.label { font-family: var(--mono); font-size: 0.72rem; letter-spacing: 0.08em; text-transform: uppercase; color: var(--muted); }
+.num { font-family: var(--mono); font-variant-numeric: tabular-nums; }
+
+/* Title block */
+.titleblock { display: grid; grid-template-columns: 1fr auto; gap: 20px; align-items: end; border-bottom: 3px solid var(--ink); padding-bottom: 16px; }
+.titleblock .meta { display: grid; grid-template-columns: auto auto; gap: 2px 14px; font-family: var(--mono); font-size: 0.78rem; color: var(--muted); }
+.titleblock .meta b { color: var(--ink); font-weight: 500; }
+.lede { color: var(--muted); margin-top: 10px; }
+@media (max-width: 720px) { .titleblock { grid-template-columns: 1fr; } }
+
+/* Key figures */
+.figures { display: grid; grid-template-columns: repeat(auto-fit, minmax(160px, 1fr)); gap: 1px; background: var(--rule); border: 1px solid var(--rule); }
+.fig { background: var(--panel); padding: 14px 16px; display: grid; gap: 4px; align-content: start; }
+.fig .v { font-family: var(--display); font-size: 2.1rem; font-weight: 600; line-height: 1; }
+.fig .v small { font-size: 1rem; font-weight: 500; color: var(--muted); margin-left: 3px; }
+.fig .d { font-size: 0.82rem; color: var(--muted); }
+.fig.hot .v { color: var(--accent); }
+
+/* Coverage bar */
+.cover { display: grid; gap: 8px; }
+.bar { display: flex; height: 18px; border: 1px solid var(--rule); background: var(--gap); }
+.bar span { display: block; height: 100%; }
+.legend { display: flex; flex-wrap: wrap; gap: 6px 18px; font-size: 0.82rem; color: var(--muted); }
+.legend i { display: inline-block; width: 11px; height: 11px; margin-right: 6px; vertical-align: -1px; border: 1px solid var(--rule); }
+
+/* Plate */
+.plate { background: var(--panel); border: 1px solid var(--rule); display: grid; }
+.tabs { display: flex; flex-wrap: wrap; border-bottom: 1px solid var(--rule); }
+.tabs button {
+  font: 600 1.02rem var(--display); letter-spacing: 0.03em; color: var(--muted); background: none; border: 0;
+  border-bottom: 3px solid transparent; padding: 12px 16px 9px; cursor: pointer;
+}
+.tabs button[aria-selected="true"] { color: var(--ink); border-bottom-color: var(--accent); }
+.tabs button:focus-visible, .ctrl button:focus-visible { outline: 2px solid var(--accent); outline-offset: -2px; }
+.view { display: grid; gap: 10px; padding: 14px; }
+.caption { font-size: 0.85rem; color: var(--muted); }
+.mapimg { background: var(--plate); width: 100%; height: auto; max-height: 85vh; object-fit: contain; display: block; border: 1px solid var(--rule); }
+.pair { display: grid; grid-template-columns: 1fr 1fr; gap: 12px; }
+@media (max-width: 720px) { .pair { grid-template-columns: 1fr; } }
+
+/* 3D viewer */
+.stage { position: relative; width: 100%; aspect-ratio: 16 / 8.5; max-width: 100%; background: #0f1418; overflow: hidden; border: 1px solid var(--rule); }
+@media (max-width: 720px) { .stage { aspect-ratio: 4 / 5; } }
+.stage canvas { display: block; width: 100%; height: 100%; touch-action: none; }
+.stage .zl { position: absolute; transform: translate(-50%, -50%); font: 600 0.95rem var(--display); color: #fff; background: rgba(217, 98, 15, 0.9); padding: 1px 7px; pointer-events: none; white-space: nowrap; }
+.stage .loading { position: absolute; inset: 0; display: grid; place-items: center; color: #c9d3da; font-family: var(--mono); font-size: 0.85rem; }
+.ctrl { display: flex; flex-wrap: wrap; gap: 8px; align-items: center; }
+.ctrl button {
+  font: 500 0.85rem var(--body); color: var(--ink); background: var(--panel); border: 1px solid var(--rule);
+  padding: 6px 12px; cursor: pointer;
+}
+.ctrl button[aria-pressed="true"] { background: var(--ink); color: var(--panel); border-color: var(--ink); }
+.ctrl [hidden] { display: none; }
+.ctrl .sep { width: 1px; align-self: stretch; background: var(--rule); margin: 0 4px; }
+.ramp { display: inline-flex; align-items: center; gap: 6px; font-family: var(--mono); font-size: 0.75rem; color: var(--muted); }
+.ramp[hidden] { display: none; }
+.ramp i { width: 110px; height: 10px; background: linear-gradient(90deg, #ffe08a, #fdae61, #f46d43, #d73027, #8b0a26); border: 1px solid var(--rule); }
+
+/* Zone schedule */
+.tablewrap { overflow-x: auto; border: 1px solid var(--rule); background: var(--panel); }
+table { border-collapse: collapse; width: 100%; min-width: 760px; font-size: 0.9rem; }
+th, td { padding: 9px 12px; text-align: right; border-bottom: 1px solid var(--rule); white-space: nowrap; }
+th { font-family: var(--mono); font-size: 0.7rem; letter-spacing: 0.07em; text-transform: uppercase; color: var(--muted); font-weight: 500; }
+th:first-child, td:first-child, th.l, td.l { text-align: left; }
+td { font-family: var(--mono); font-variant-numeric: tabular-nums; }
+td.zone { font-family: var(--display); font-size: 1.15rem; font-weight: 600; }
+td .tag { font-family: var(--body); font-size: 0.75rem; color: var(--muted); margin-left: 6px; font-weight: 400; }
+tr.total td { font-weight: 600; border-bottom: 0; border-top: 2px solid var(--ink); }
+.minibar { display: flex; width: 140px; height: 10px; background: var(--gap); }
+.minibar span { height: 100%; }
+
+/* Notes */
+.cols { display: grid; grid-template-columns: repeat(auto-fit, minmax(300px, 1fr)); gap: 24px; }
+.notes { display: grid; gap: 10px; align-content: start; }
+.notes ul { margin: 0; padding-left: 18px; display: grid; gap: 6px; color: var(--ink); }
+.notes li { max-width: 62ch; }
+.notes li::marker { color: var(--accent); }
+.foot { font-size: 0.8rem; color: var(--muted); border-top: 1px solid var(--rule); padding-top: 12px; }
+@media (prefers-reduced-motion: reduce) { * { scroll-behavior: auto !important; } }
+</style>
+
+<div class="wrap">
+  <header class="titleblock">
+    <div>
+      <div class="label">__EYEBROW__</div>
+      <h1>__TITLE__</h1>
+      <p class="lede">__LEDE__</p>
+    </div>
+    <div class="meta">
+__META__
+    </div>
+  </header>
+
+  <section class="figures" aria-label="Key figures">
+__FIGURES__
+  </section>
+
+  <section class="cover" aria-label="How the floor is used">
+__COVER__
+  </section>
+
+  <section class="plate" aria-label="Maps and 3D model">
+    <div class="tabs" role="tablist">
+      <button role="tab" id="tab-3d" aria-selected="true" aria-controls="v-3d">3D scan</button>
+      <button role="tab" id="tab-height" aria-selected="false" aria-controls="v-height">Stack height</button>
+      <button role="tab" id="tab-ortho" aria-selected="false" aria-controls="v-ortho">Top view</button>
+      <button role="tab" id="tab-model" aria-selected="false" aria-controls="v-model">Renders</button>
+    </div>
+
+    <div class="view" id="v-3d" role="tabpanel" aria-labelledby="tab-3d">
+      <div class="ctrl">
+        <button id="b-mesh" aria-pressed="true">Textured model</button>
+        <button id="b-pts" aria-pressed="false">Point cloud</button>
+        <span class="sep"></span>
+        <button id="b-roof" aria-pressed="false">Show roof</button>
+        <span class="sep" id="sep-col" hidden></span>
+        <button id="b-rgb" aria-pressed="true" hidden>Scan colour</button>
+        <button id="b-hgt" aria-pressed="false" hidden>Height colour</button>
+        <span class="ramp" id="ramp" hidden>0 m <i></i> 3 m+</span>
+        <span class="sep"></span>
+        <button id="b-top">Top</button>
+        <button id="b-iso">Angled</button>
+      </div>
+      <div class="stage" id="stage"><div class="loading" id="loading">Loading the textured model…</div></div>
+      <p class="caption">__MODEL_CAPTION__ Drag to orbit, scroll or pinch to zoom, right-drag to pan. The roof is cut at 3.3 m so you can see the stock. Orange tags mark the floor-plan zones.</p>
+    </div>
+
+    <div class="view" id="v-height" role="tabpanel" aria-labelledby="tab-height" hidden>
+      <img class="mapimg" alt="Stock stack height map with walls and zones" src="__IMG_HEIGHT__">
+      <p class="caption">How high goods are stacked above the local floor. Light blue is free floor, white was not seen by the scanner. Faded areas fall outside Polycam's walls.</p>
+    </div>
+
+    <div class="view" id="v-ortho" role="tabpanel" aria-labelledby="tab-ortho" hidden>
+      <img class="mapimg" alt="True-colour top view of floor and stock with roof removed" src="__IMG_ORTHO__">
+      <p class="caption">The point cloud seen from above with everything over 3.3 m (the roof) removed. 5 m grid, north up.</p>
+    </div>
+
+    <div class="view" id="v-model" role="tabpanel" aria-labelledby="tab-model" hidden>
+      <img class="mapimg" alt="Top view of the textured Blender model with roof cut away" src="__IMG_TOP__">
+      <div class="pair">
+        <img class="mapimg" alt="Cut-away view from the south-west" src="__IMG_SW__">
+        <img class="mapimg" alt="Cut-away view from the north-east" src="__IMG_NE__">
+      </div>
+      <p class="caption">Polycam's textured mesh rendered in Blender, roof cut away at 3.3 m. Top: plan view. Bottom: from the south-west and north-east.</p>
+    </div>
+  </section>
+
+  <section style="display:grid;gap:12px" aria-label="Zone schedule">
+    <h2>Zone schedule</h2>
+    <div class="tablewrap">
+      <table>
+        <thead><tr>
+          <th>Zone</th><th>Floor m²</th><th>Stock m²</th><th>Free m²</th><th>Not scanned m²</th><th class="l">Use of floor</th><th>Avg stack m</th><th>Tallest 10% m</th><th>Stock m³</th><th>Ceiling m</th>
+        </tr></thead>
+        <tbody id="zones"></tbody>
+      </table>
+    </div>
+    <p class="caption">Zones are lettered by size. Polycam labels rooms as if in a house (Bedroom, Other), shown in grey for reference.</p>
+  </section>
+
+  <section class="cols">
+    <div class="notes">
+      <h2>What the scan shows</h2>
+      <ul>
+__NOTES_SHOWS__
+      </ul>
+    </div>
+    <div class="notes">
+      <h2>How it was measured</h2>
+      <ul>
+__NOTES_METHOD__
+      </ul>
+    </div>
+  </section>
+
+  <p class="foot">__FOOT__</p>
+</div>
+
+<script src="https://cdn.jsdelivr.net/npm/three@0.147.0/build/three.min.js"></script>
+<script src="https://cdn.jsdelivr.net/npm/three@0.147.0/examples/js/controls/OrbitControls.js"></script>
+<script>
+const ZONES = __ZONES__;
+const STATS = __STATS__;
+const POINT_COUNT = __POINT_COUNT__;
+const POINTS_B64 = "__POINTS__";
+
+/* Zone schedule */
+(function () {
+  const body = document.getElementById("zones");
+  const fmt = (v, d = 1) => Number(v).toLocaleString("en-GB", { minimumFractionDigits: d, maximumFractionDigits: d });
+  const row = (z, total) => {
+    const walls = Math.max(0, z.floor_area_m2 - z.stock_footprint_m2 - z.free_floor_m2 - z.not_scanned_m2);
+    const pct = v => (100 * v / z.floor_area_m2).toFixed(1) + "%";
+    const tr = document.createElement("tr");
+    if (total) tr.className = "total";
+    tr.innerHTML =
+      `<td class="zone">${total ? "All" : z.zone}${total ? "" : `<span class="tag">${z.polycam_name}</span>`}</td>` +
+      `<td>${fmt(z.floor_area_m2)}</td><td>${fmt(z.stock_footprint_m2)}</td><td>${fmt(z.free_floor_m2)}</td><td>${fmt(z.not_scanned_m2)}</td>` +
+      `<td class="l"><div class="minibar" role="img" aria-label="${Math.round(100 * z.stock_footprint_m2 / z.floor_area_m2)}% stock">` +
+      `<span style="width:${pct(z.stock_footprint_m2)};background:var(--stock)"></span>` +
+      `<span style="width:${pct(z.free_floor_m2)};background:var(--free)"></span>` +
+      `<span style="width:${pct(z.not_scanned_m2)};background:var(--gap)"></span>` +
+      `<span style="width:${pct(walls)};background:var(--wall)"></span></div></td>` +
+      `<td>${fmt(z.stack_height_avg_m, 2)}</td><td>${total ? "" : fmt(z.stack_height_p90_m, 2)}</td>` +
+      `<td>${fmt(z.stock_volume_m3, 0)}</td><td>${total ? "" : z.ceiling_height_m.replace(" - ", "–")}</td>`;
+    body.appendChild(tr);
+  };
+  STATS.zones.forEach(z => row(z, false));
+  row({ ...STATS.total, zone: "All" }, true);
+})();
+
+/* Tabs */
+const tabs = [...document.querySelectorAll('[role="tab"]')];
+function selectTab(tab) {
+  tabs.forEach(t => {
+    const on = t === tab;
+    t.setAttribute("aria-selected", on);
+    document.getElementById(t.getAttribute("aria-controls")).hidden = !on;
+  });
+  if (tab.id === "tab-3d") viewer && viewer.resize();
+}
+tabs.forEach(t => t.addEventListener("click", () => selectTab(t)));
+document.querySelector('[role="tablist"]').addEventListener("keydown", e => {
+  const i = tabs.indexOf(document.activeElement);
+  if (i < 0 || !["ArrowLeft", "ArrowRight"].includes(e.key)) return;
+  const next = tabs[(i + (e.key === "ArrowRight" ? 1 : tabs.length - 1)) % tabs.length];
+  next.focus(); selectTab(next);
+});
+
+/* 3D viewer */
+let viewer = null;
+function heightColour(h) {
+  const stops = [[0, [255, 224, 138]], [0.75, [253, 174, 97]], [1.5, [244, 109, 67]], [2.25, [215, 48, 39]], [3, [139, 10, 38]]];
+  if (h <= 0.12) return [168, 178, 186];
+  for (let i = 1; i < stops.length; i++) {
+    if (h <= stops[i][0]) {
+      const [h0, c0] = stops[i - 1], [h1, c1] = stops[i], t = (h - h0) / (h1 - h0);
+      return c0.map((c, k) => c + t * (c1[k] - c));
+    }
+  }
+  return stops[stops.length - 1][1];
+}
+
+function buildViewer() {
+  const stage = document.getElementById("stage");
+  if (!window.THREE || !THREE.OrbitControls) {
+    document.getElementById("loading").textContent = "The 3D viewer could not load. The maps in the other tabs still work.";
+    return null;
+  }
+  const raw = Uint8Array.from(atob(POINTS_B64), c => c.charCodeAt(0));
+  const n = POINT_COUNT;
+  const pos16 = new Int16Array(raw.buffer, 0, n * 3);
+  const rgb = raw.subarray(n * 6, n * 9);
+  const roof = raw.subarray(n * 9, n * 10);
+
+  const positions = new Float32Array(n * 3);
+  for (let i = 0; i < n * 3; i++) positions[i] = pos16[i] / 100;
+  const scanColours = new Float32Array(n * 3);
+  const heightColours = new Float32Array(n * 3);
+  for (let i = 0; i < n; i++) {
+    for (let k = 0; k < 3; k++) scanColours[i * 3 + k] = rgb[i * 3 + k] / 255;
+    const c = heightColour(positions[i * 3 + 2]);
+    for (let k = 0; k < 3; k++) heightColours[i * 3 + k] = c[k] / 255;
+  }
+  // Two index sets: everything, and everything except the roof.
+  const all = [], noRoof = [];
+  for (let i = 0; i < n; i++) { all.push(i); if (!roof[i]) noRoof.push(i); }
+
+  const geometry = new THREE.BufferGeometry();
+  geometry.setAttribute("position", new THREE.BufferAttribute(positions, 3));
+  const colourAttr = new THREE.BufferAttribute(scanColours.slice(), 3);
+  geometry.setAttribute("color", colourAttr);
+  geometry.setIndex(noRoof);
+  const material = new THREE.PointsMaterial({ size: 0.075, vertexColors: true, sizeAttenuation: true });
+  const cloud = new THREE.Points(geometry, material);
+
+  const scene = new THREE.Scene();
+  scene.background = new THREE.Color(0x0f1418);
+  cloud.visible = false;
+  scene.add(cloud);
+
+  // Textured mesh, loaded from the files published next to the page.
+  const roofPlane = new THREE.Plane(new THREE.Vector3(0, 0, -1), 3.3);  // keeps z < 3.3 m
+  const meshMaterials = [];
+  const model = new THREE.Group();
+  scene.add(model);
+  const loading = document.getElementById("loading");
+  async function loadModel() {
+    const parts = await (await fetch("model/manifest.json")).json();
+    const loader = new THREE.TextureLoader();
+    let done = 0;
+    await Promise.all(parts.map(async part => {
+      const text = await (await fetch("model/" + part.bin)).text();
+      const bytes = Uint8Array.from(atob(text.trim()), c => c.charCodeAt(0));
+      const buf = bytes.buffer;
+      const n = part.verts;
+      const p16 = new Int16Array(buf, 0, n * 3);
+      const pos = new Float32Array(n * 3);
+      for (let i = 0; i < n * 3; i++) pos[i] = p16[i] / 500;
+      const uv = new Uint16Array(buf, n * 6, n * 2);
+      const idx = part.index32 ? new Uint32Array(buf, n * 10, part.tris * 3) : new Uint16Array(buf, n * 10, part.tris * 3);
+      const g = new THREE.BufferGeometry();
+      g.setAttribute("position", new THREE.BufferAttribute(pos, 3));
+      g.setAttribute("uv", new THREE.BufferAttribute(uv, 2, true));
+      g.setIndex(new THREE.BufferAttribute(idx, 1));
+      const tex = await new Promise((ok, fail) => loader.load("model/" + part.tex, ok, undefined, fail));
+      tex.encoding = THREE.sRGBEncoding;
+      tex.anisotropy = 4;
+      const m = new THREE.MeshBasicMaterial({ map: tex, side: THREE.DoubleSide, clippingPlanes: [roofPlane] });
+      meshMaterials.push(m);
+      model.add(new THREE.Mesh(g, m));
+      done++;
+      if (loading) loading.textContent = `Loading the textured model… ${done} of ${parts.length}`;
+    }));
+  }
+
+  const zoneMat = new THREE.LineBasicMaterial({ color: 0xf08a3c });
+  const labels = [];
+  ZONES.zones.forEach(z => {
+    const pts = z.polygon.map(([x, y]) => new THREE.Vector3(x, y, 0.03));
+    scene.add(new THREE.Line(new THREE.BufferGeometry().setFromPoints(pts), zoneMat));
+    const cx = z.polygon.reduce((s, p) => s + p[0], 0) / z.polygon.length;
+    const cy = z.polygon.reduce((s, p) => s + p[1], 0) / z.polygon.length;
+    const el = document.createElement("div");
+    el.className = "zl"; el.textContent = "Zone " + z.id;
+    stage.appendChild(el);
+    labels.push({ el, pos: new THREE.Vector3(cx, cy, 0.2) });
+  });
+
+  const renderer = new THREE.WebGLRenderer({ antialias: true });
+  renderer.localClippingEnabled = true;
+  renderer.outputEncoding = THREE.sRGBEncoding;
+  renderer.setPixelRatio(Math.min(window.devicePixelRatio, 2));
+  stage.appendChild(renderer.domElement);
+  const camera = new THREE.PerspectiveCamera(45, 1, 0.1, 400);
+  camera.up.set(0, 0, 1);
+  const controls = new THREE.OrbitControls(camera, renderer.domElement);
+  controls.enableDamping = true;
+
+  // Frame the scan whatever its size: centre of its points, distance from its diagonal.
+  let minX = Infinity, maxX = -Infinity, minY = Infinity, maxY = -Infinity;
+  for (let i = 0; i < n; i++) {
+    const x = positions[i * 3], y = positions[i * 3 + 1];
+    if (x < minX) minX = x; if (x > maxX) maxX = x; if (y < minY) minY = y; if (y > maxY) maxY = y;
+  }
+  const cx = (minX + maxX) / 2, cy = (minY + maxY) / 2;
+  const reach = Math.max(8, Math.hypot(maxX - minX, maxY - minY));
+  const views = {
+    iso: () => { camera.position.set(cx - reach * 0.33, cy - reach * 0.5, reach * 0.4); controls.target.set(cx, cy, 0); },
+    top: () => {
+      // Back off until the whole plan fits the view's height and width.
+      const half = Math.tan(THREE.MathUtils.degToRad(camera.fov / 2));
+      const fit = Math.max((maxY - minY) / 2, (maxX - minX) / 2 / camera.aspect) / half;
+      camera.position.set(cx, cy - 0.01, fit * 1.1 + 2);
+      controls.target.set(cx, cy, 0);
+    },
+  };
+  views.iso();
+
+  function resize() {
+    const w = stage.clientWidth, h = stage.clientHeight;
+    if (!w || !h) return;
+    renderer.setSize(w, h, false);
+    camera.aspect = w / h;
+    camera.updateProjectionMatrix();
+  }
+  new ResizeObserver(resize).observe(stage);
+  resize();
+
+  const v = new THREE.Vector3();
+  function frame() {
+    controls.update();
+    renderer.render(scene, camera);
+    const w = stage.clientWidth, h = stage.clientHeight;
+    labels.forEach(({ el, pos }) => {
+      v.copy(pos).project(camera);
+      const visible = v.z < 1 && Math.abs(v.x) < 1.05 && Math.abs(v.y) < 1.05;
+      el.style.display = visible ? "block" : "none";
+      el.style.left = ((v.x + 1) / 2 * w) + "px";
+      el.style.top = ((1 - v.y) / 2 * h) + "px";
+    });
+    requestAnimationFrame(frame);
+  }
+  frame();
+  loadModel().then(() => loading && loading.remove()).catch(() => {
+    if (loading) loading.textContent = "The textured model could not load. Showing the point cloud.";
+    setMode("pts");
+    setTimeout(() => loading && loading.remove(), 2500);
+  });
+
+  const press = (id, on) => document.getElementById(id).setAttribute("aria-pressed", on);
+  function setMode(mode) {
+    const pts = mode === "pts";
+    cloud.visible = pts; model.visible = !pts;
+    press("b-pts", pts); press("b-mesh", !pts);
+    ["b-rgb", "b-hgt", "sep-col"].forEach(id => document.getElementById(id).hidden = !pts);
+    document.getElementById("ramp").hidden = !pts || document.getElementById("b-hgt").getAttribute("aria-pressed") !== "true";
+  }
+  document.getElementById("b-mesh").addEventListener("click", () => setMode("mesh"));
+  document.getElementById("b-pts").addEventListener("click", () => setMode("pts"));
+  document.getElementById("b-roof").addEventListener("click", e => {
+    const on = e.currentTarget.getAttribute("aria-pressed") !== "true";
+    geometry.setIndex(on ? all : noRoof);
+    meshMaterials.forEach(m => { m.clippingPlanes = on ? [] : [roofPlane]; m.needsUpdate = true; });
+    press("b-roof", on);
+    e.currentTarget.textContent = on ? "Hide roof" : "Show roof";
+  });
+  const setColours = which => {
+    colourAttr.array.set(which === "rgb" ? scanColours : heightColours);
+    colourAttr.needsUpdate = true;
+    press("b-rgb", which === "rgb"); press("b-hgt", which !== "rgb");
+    document.getElementById("ramp").hidden = which === "rgb";
+  };
+  document.getElementById("b-rgb").addEventListener("click", () => setColours("rgb"));
+  document.getElementById("b-hgt").addEventListener("click", () => setColours("hgt"));
+  document.getElementById("b-top").addEventListener("click", views.top);
+  document.getElementById("b-iso").addEventListener("click", views.iso);
+  return { resize };
+}
+window.addEventListener("load", () => { try { viewer = buildViewer(); } catch (err) {
+  const l = document.getElementById("loading"); if (l) l.textContent = "The 3D viewer could not start here. The maps in the other tabs still work.";
+} });
+</script>

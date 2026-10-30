@@ -41,6 +41,10 @@ warehouse and evaluate the space.
     the floor, roof clearance and aisle access, with per-zone totals.
   - `archive_scan.py` / `restore_baseline.py`: package a scan's files into a
     private artifact, and restore them with SHA-256 checks.
+  - `build_viewer.py` + `viewer_template.html`: build the interactive viewer
+    page (textured model, point cloud, maps, zone table) for any scan or the
+    master, with the page's words supplied in a notes JSON. Publish
+    `index.html` with `model/*` as supporting files.
   - `register_scan.py`: finds a scan's place in the master frame from walls
     only (rotation search + cross-correlation + ICP), reports overlap, open
     floor landing on walls, shared area and RMS, and applies the acceptance rule.
