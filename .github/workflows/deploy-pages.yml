@@ -1,6 +1,7 @@
 name: Deploy to GitHub Pages
 
-# Publishes the self-contained mobile ROI calculator (index.html) to GitHub Pages.
+# Publishes the self-contained mobile ROI calculator (index.html) and the
+# LipType lip-reading prototype (lipreading/) to GitHub Pages.
 # Runs on every push to main, and can be triggered manually from the Actions tab.
 
 on:
@@ -32,6 +33,8 @@ jobs:
         run: |
           mkdir -p _site
           cp index.html _site/index.html
+          mkdir -p _site/lipreading
+          cp -r lipreading/index.html lipreading/js _site/lipreading/
 
       - name: Configure Pages (auto-enable if needed)
         uses: actions/configure-pages@v5
