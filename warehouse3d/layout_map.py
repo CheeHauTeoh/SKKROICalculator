@@ -46,8 +46,13 @@ def load_cloud(path):
     return xyz, rgb
 
 
-def load_dxf(path):
-    """Walls (polylines) and zones (floor polygons + room label) from a Polycam DXF."""
+def load_dxf(path, ids_from_labels=False):
+    """Walls (polylines) and zones (floor polygons + room label) from a Polycam DXF.
+
+    Zones are lettered by size. With `ids_from_labels` (a merged plan from
+    build_master.py, labels like "S03 Bedroom"), they are numbered by scan and
+    lettered by size within each scan instead ("3A"), matching each scan's own viewer.
+    """
     import ezdxf
     from shapely.geometry import Point, Polygon
 
@@ -64,8 +69,14 @@ def load_dxf(path):
         name = next((n for n, x, y in labels if poly.contains(Point(x, y))), "Room")
         zones.append({"polycam_name": name, "polygon": poly})
     zones.sort(key=lambda z: -z["polygon"].area)
-    for i, zone in enumerate(zones):
-        zone["id"] = chr(ord("A") + i)
+    counters = {}
+    for zone in zones:
+        scan = re.match(r"S(\d+) ", zone["polycam_name"]) if ids_from_labels else None
+        prefix = str(int(scan.group(1))) if scan else ""
+        counters[prefix] = counters.get(prefix, 0) + 1
+        zone["id"] = prefix + chr(ord("A") + counters[prefix] - 1)
+    if ids_from_labels:
+        zones.sort(key=lambda z: (len(z["id"]), z["id"]))
     return walls, zones
 
 
@@ -222,14 +233,30 @@ def zone_stats(zones, masks, grids, ceilings):
     return rows
 
 
+def draw_annotations(ax, annotations):
+    """Dashed outlines with a caption, e.g. scans whose position is not confirmed."""
+    for note in annotations:
+        poly = np.array(note["polygon"])
+        ax.plot(np.r_[poly[:, 0], poly[0, 0]], np.r_[poly[:, 1], poly[0, 1]], color="#b44d0b", linewidth=1.4,
+                linestyle=(0, (6, 4)))
+        ax.text(poly[:, 0].min() + 0.3, poly[:, 1].max() + 0.3, note["label"], ha="left", va="bottom", fontsize=10,
+                color="#b44d0b", fontweight="bold")
+
+
 def draw_plan(ax, walls, zones, grids, label_colour="#102a43"):
     for wall in walls:
         ax.plot(wall[:, 0], wall[:, 1], color="#1f2933", linewidth=2.2, solid_capstyle="butt")
+    placed = []
     for zone in zones:
         x, y = zone["polygon"].exterior.xy
         ax.plot(x, y, color="#486581", linewidth=0.8, linestyle=(0, (4, 3)))
         c = zone["polygon"].representative_point()
-        ax.text(c.x, c.y, f"Zone {zone['id']}", ha="center", va="center", fontsize=11, fontweight="bold",
+        cx, cy = c.x, c.y
+        # Nudge a label down while it would sit on one already drawn (narrow neighbouring zones).
+        while any(abs(cx - px) < 4.0 and abs(cy - py) < 1.2 for px, py in placed):
+            cy -= 1.3
+        placed.append((cx, cy))
+        ax.text(cx, cy, f"Zone {zone['id']}", ha="center", va="center", fontsize=11, fontweight="bold",
                 color=label_colour, bbox=dict(boxstyle="round,pad=0.25", fc="white", ec="none", alpha=0.8))
 
 
@@ -271,19 +298,20 @@ def extent(grids):
     return (x0, x0 + shape[0] * grids["cell"], y0, y0 + shape[1] * grids["cell"])
 
 
-def plot_orthophoto(path, grids, walls, zones):
+def plot_orthophoto(path, grids, walls, zones, annotations=()):
     colour, _ = fill_colour_gaps(grids["colour"], grids["seen"])
     fig, ax = plt.subplots(figsize=figure_size(grids), dpi=150)
     ax.imshow(np.transpose(colour, (1, 0, 2)), origin="lower", extent=extent(grids), interpolation="nearest")
     fade(ax, grids)
     draw_plan(ax, walls, zones, grids)
+    draw_annotations(ax, annotations)
     finish_axes(ax, grids, "Top view of floor and stock (roof removed), 5 m grid")
     fig.tight_layout()
     fig.savefig(path)
     plt.close(fig)
 
 
-def plot_heights(path, grids, walls, zones, stock_cap):
+def plot_heights(path, grids, walls, zones, stock_cap, annotations=()):
     top = grids["top"]
     base = np.zeros(top.shape + (4,))
     base[grids["free"]] = (0.93, 0.95, 0.97, 1)  # free floor
@@ -295,6 +323,7 @@ def plot_heights(path, grids, walls, zones, stock_cap):
                       interpolation="nearest")
     fade(ax, grids)
     draw_plan(ax, walls, zones, grids)
+    draw_annotations(ax, annotations)
     finish_axes(ax, grids, "Stock stack height above floor")
     bar = fig.colorbar(image, ax=ax, fraction=0.025, pad=0.01)
     bar.set_label("stack height (m)")
@@ -334,7 +363,9 @@ def write_report(out, rows, totals, args):
         "- Phone LiDAR misses spots hidden behind tall stacks; those count as not scanned.",
         f"- {totals['stock_outside_floor_plan_m2']} m² of stock-height objects sit outside Polycam's walls (faded on the maps); "
         "the floor plan simplifies walls that are not square.",
-        "- Polycam's room labels (Bedroom etc.) are automatic and wrong for a warehouse; zones are lettered by size.",
+        "- Polycam's room labels (Bedroom etc.) are automatic and wrong for a warehouse; "
+        + ("zones are numbered by scan and lettered by size within each scan." if args.zone_ids_from_labels
+           else "zones are lettered by size."),
     ]
     (out / "layout_report.md").write_text("\n".join(lines) + "\n")
     (out / "layout_report.json").write_text(json.dumps({"zones": rows, "total": totals}, indent=2))
@@ -348,6 +379,9 @@ def main():
     parser.add_argument("--cell", type=float, default=0.1, help="Grid cell, metres")
     parser.add_argument("--stock-cap", type=float, default=3.3, help="Ignore points higher than this above the floor (roof)")
     parser.add_argument("--min-points", type=int, default=2)
+    parser.add_argument("--zone-ids-from-labels", action="store_true",
+                        help="Merged plan from build_master.py: number zones by scan (1A, 2A, ...)")
+    parser.add_argument("--annotations", help="JSON list of {label, polygon} outlines to draw on the maps")
     parser.add_argument("--out", default="out")
     args = parser.parse_args()
 
@@ -356,7 +390,8 @@ def main():
     xyz, rgb = load_cloud(args.scan)
     grids = build_grids(xyz, rgb, args.cell, args.stock_cap, args.min_points)
 
-    walls, zones = load_dxf(args.dxf) if args.dxf else ([], [])
+    walls, zones = load_dxf(args.dxf, args.zone_ids_from_labels) if args.dxf else ([], [])
+    annotations = json.loads(pathlib.Path(args.annotations).read_text()) if args.annotations else []
     ceilings = load_csv_heights(args.csv) if args.csv else {}
     if not zones:  # no floor plan: one zone covering everything scanned
         from shapely.geometry import MultiPoint
@@ -387,14 +422,15 @@ def main():
         "stock_outside_floor_plan_m2": round(float((grids["stock"] & ~inside).sum() * area), 1),
     }
 
-    plot_orthophoto(out / "orthophoto.png", grids, walls, zones)
-    plot_heights(out / "stock_height.png", grids, walls, zones, args.stock_cap)
+    plot_orthophoto(out / "orthophoto.png", grids, walls, zones, annotations)
+    plot_heights(out / "stock_height.png", grids, walls, zones, args.stock_cap, annotations)
     write_report(out, rows, totals, args)
     np.savez_compressed(out / "layout_grid.npz", origin=grids["origin"], cell=args.cell, floor=grids["floor"],
                         top=grids["top"], stock=grids["stock"], free=grids["free"])
     zone_geo = [{"id": z["id"], "polycam_name": z["polycam_name"],
                  "polygon": [list(map(float, p)) for p in z["polygon"].exterior.coords]} for z in zones]
-    (out / "zones.json").write_text(json.dumps({"zones": zone_geo, "walls": [w.tolist() for w in walls]}))
+    (out / "zones.json").write_text(json.dumps({"zones": zone_geo, "walls": [w.tolist() for w in walls],
+                                                "annotations": annotations}))
     print(json.dumps(totals, indent=2))
     print((out / "layout_report.md").read_text())
 

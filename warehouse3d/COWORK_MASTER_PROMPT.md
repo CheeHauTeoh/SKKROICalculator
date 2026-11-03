@@ -186,36 +186,66 @@ python build_viewer.py --scan S/<name>.laz --obj S/<name>.obj --layout O --notes
 
 ## 7. Build the master viewer
 
-There's no master builder in the repo yet. Write
-`_warehouse3d/tools/warehouse3d/build_master.py`, reusing the existing tools
-instead of rewriting them. Treat the master as one combined "virtual scan" in
-the master frame:
+Use `build_master.py`. It was built and tested on scans 01–03, so don't write
+your own. It treats the master as one combined "virtual scan" in scan 01's
+coordinates:
 
-1. **Transform each placed scan into the master frame:**
-   - LAZ points (laspy)
-   - DXF walls and rooms (ezdxf)
-   - OBJ vertices (remember the OBJ is Y up: convert, transform, convert back)
+1. Write `_warehouse3d/master/master_config.json` with one entry per scan:
+   ```json
+   {"title": "Kota Bharu Warehouse Master Scan",
+    "scans": [
+     {"id": "scan_01_baseline", "number": 1, "captured": "2026-10-25",
+      "laz": "...", "obj": "...", "dxf": "...", "csv": "...", "layout": "<that scan's layout_map output folder>",
+      "placement": {"method": "master"}},
+     {"id": "scan_02_bay", "number": 2, "captured": "2026-10-30", "...": "...",
+      "placement": {"method": "unplaced"}}]}
+   ```
+   - Paths are relative to the config file.
+   - Placement methods:
+     - `master`: exactly one scan, scan 01
+     - `measured`: with `matrix` from an accepted `register_scan.py` result,
+       chained into the master frame
+     - `description`: with `matrix` and `uncertainty_m`
+     - `unplaced`
+2. Run:
+   ```
+   python build_master.py _warehouse3d/master/master_config.json --out _warehouse3d/master --run --inline
+   ```
+   - Scans are numbered by `number`. Zones come out as 1A…, 2A…, matching each
+     scan's own viewer.
+   - Every scan's floor is levelled to scan 01's floor.
+   - Where placed scans overlap, the newest scan is kept and older points and
+     faces there are dropped.
+   - Unplaced scans are set in a row south of the building with a 5 m gap,
+     outlined and captioned "position not confirmed" on the maps and in 3D.
+     Scans placed from a description are captioned with their uncertainty.
+3. **Outputs:**
 
-   Then:
-   - Prefix room names with the scan ID in both the DXF and the CSV, so ceiling
-     heights stay matched; `layout_map.load_csv_heights` matches by room name.
-   - Prefix material names with the scan ID in the OBJ and MTL, so parts don't collide.
-2. **Overlaps:** keep one scan per area, the newest unless an older one
-   clearly covers it better. Crop the other scans' points and mesh faces
-   there, and save a map of which scan was kept where.
-3. **Unplaced scans:** still show them in the master viewer, but set them
-   beside the building (5 m gap, in a row), each labelled **"position not
-   confirmed"**. Exclude them from the building outline.
-4. Write the merged LAZ, DXF, CSV, OBJ and MTL to `master/merged/`. Then run
-   the same four steps as section 5 on them, with
-   `--out _warehouse3d/master/...` and `--inline`. If `layout_map.py` or
-   `build_viewer.py` need small changes to handle merged input, make them
-   and list them for me.
-5. **Size budget:** keep `master_viewer.html` under about 60 MB. If it's
-   bigger, lower the texture width or the point target in `build_viewer.py`
-   for the master only, and say what you changed.
-6. Test it like the per-scan viewers. In the 3D view, check that the scans
-   line up at their shared walls, and show me a top-view screenshot.
+   | Path | What it is |
+   |---|---|
+   | `merged/` | Combined LAZ/DXF/CSV/OBJ/MTL plus textures |
+   | `size_report.md/json` | Total size, measured vs. assumed |
+   | `coverage.png` | Which scan covers where |
+   | `layout/` | Maps, `layout_report`, Blender scene, planner with every stack |
+   | `viewer/index.html` | The master viewer. Copy it to `master_viewer.html` |
+
+   It also writes `viewer_notes.json` from the measurements. Rewrite the
+   notes in plain words if needed (measured facts only), then re-run only
+   `build_viewer.py` with `--notes`.
+4. **Expect these sizes and timings** (on the cloud machine used to build
+   it, three scans):
+   - about 3.5 minutes in total
+   - 4.2 million points and 675,000 triangles
+   - 448 movable stacks in the planner
+   - a 31.6 MB viewer; with `--inline` it's one file of similar size
+   - planner and scene `.blend` files of about 45–50 MB each
+
+   The viewer stores mesh positions in 2 mm steps up to 65.5 m from the
+   origin. If many unplaced scans push past that, `build_viewer.py` stops
+   with a message. Lower `--gap` in that case, or ask me.
+5. Look at `coverage.png`, `layout/stock_height.png` and the renders. In the
+   3D view, check that placed scans line up at their shared walls, and show
+   me a top-view screenshot.
 
 ## 8. Determine the current layout and total size
 
@@ -225,7 +255,8 @@ Write `_warehouse3d/master/master_report.md`. It must:
   separate, labelled columns or sections.
 - Say how each figure was measured.
 
-It should cover:
+It should cover the points below. Start from `size_report.md` and
+`layout/layout_report.md`; they already have the total size and per-zone figures.
 
 1. **Total size:**
    - **Measured building footprint:** the union of the floor polygons of the

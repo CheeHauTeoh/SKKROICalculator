@@ -362,5 +362,35 @@
    "notes": "Long hall, Polycam main room 36.2 x 8.4 m bounding box, 6.2 m ceiling; side room (zone B) 8.9 x 3.8 m with 3.7 m ceiling. Zone C (3.6 x 1.6 m, ceiling 3.3 m) holds stairs per Polycam, so its 3.19 m average stack is probably stairs or ceiling, not stock. A forklift is parked in zone A. Only 5 of 10 textures were received (2000 px chat images, matched by colour); the other parts are coloured from the LiDAR points. Polycam floor plan image not archived: it arrived as a chat image, not a file.",
    "viewer": "https://claude.ai/artifact/33LQaS4YFgDNpbPBgCSkJt"
   }
- ]
+ ],
+ "master": {
+  "built": "2026-11-03",
+  "tool": "build_master.py",
+  "viewer": "https://claude.ai/artifact/D6eAeusVoRW4MFBuUYhcvk",
+  "placed": {
+   "scan_01_baseline": "master"
+  },
+  "unplaced": [
+   "scan_02_bay",
+   "scan_03_hall"
+  ],
+  "summary": {
+   "measured_building_m2": 391.2,
+   "measured_building_length_x_width_m": [
+    34.3,
+    16.4
+   ],
+   "unplaced_plan_area_m2": 365.7,
+   "upper_bound_if_no_overlap_m2": 756.9,
+   "all_zones_floor_m2": 756.8,
+   "stock_footprint_m2": 261.7,
+   "free_floor_m2": 271.8,
+   "not_scanned_m2": 80.6,
+   "stock_volume_m3": 384.0,
+   "stack_height_avg_m": 1.47,
+   "polycam_room_volume_m3": 3971.67,
+   "stacks": 448
+  },
+  "notes": "Only scan 01 is placed. Scans 02 and 03 are set beside the building (gap 5 m) and captioned 'position not confirmed'; the 756.9 m2 total holds only if they don't overlap scan 01. Zone 3C (stairs, 3.3 m ceiling) reads 65% stock but is probably not stock."
+ }
 }

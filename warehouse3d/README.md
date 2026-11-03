@@ -134,6 +134,13 @@ python warehouse3d/register_scan.py --master-laz base.laz --master-dxf base.dxf 
     --scan-laz new.laz --scan-dxf new.dxf --scan-grid new_out/layout_grid.npz --out new_out/registration.json
 ```
 
+Combine scans into one master "virtual scan" in the baseline's coordinates and measure the total size
+(unplaced scans are set beside the building and captioned "position not confirmed"):
+
+```bash
+python warehouse3d/build_master.py master_config.json --out master/ --run [--inline]
+```
+
 `MASTER_SCAN_PROMPT.md` carries the project context for a Claude Code session;
 `COWORK_MASTER_PROMPT.md` does the same for Claude Cowork working on a local
 folder with one subfolder per scan. `scans/registry.json` lists every scan

@@ -8,7 +8,9 @@ Artifacts won't serve .bin, so mesh geometry ships as base64 text.
 
 The words on the page come from a notes JSON, so nothing is invented here:
   {"title": ..., "eyebrow": ..., "lede": ..., "shows": [...], "method": [...], "foot": ...,
-   "volume_note": "optional sentence under the stock volume figure"}
+   "volume_note": "optional sentence under the stock volume figure",
+   "floor_note": "optional sentence under the floor area figure",
+   "zones_caption": "optional caption under the zone table"}
 
 Usage:
     python build_viewer.py --scan scan.laz --obj scan.obj --layout out/ --notes notes.json --out viewer/
@@ -22,6 +24,7 @@ import base64
 import html
 import json
 import pathlib
+import re
 
 import numpy as np
 from PIL import Image
@@ -79,7 +82,11 @@ def model_files(obj, images, scan, floor_z, out, texture_width=2048):
         uniq, inv = np.unique(f.reshape(-1, 2), axis=0, return_inverse=True)
         p = verts[uniq[:, 0] - 1]
         t = uvs[uniq[:, 1] - 1]
-        pos = np.round(np.column_stack((p[:, 0], p[:, 1], p[:, 2] - floor_z)) * 500).astype(np.int16)
+        pos = np.round(np.column_stack((p[:, 0], p[:, 1], p[:, 2] - floor_z)) * 500)
+        if np.abs(pos).max() > 32767:
+            raise SystemExit(f"{name}: mesh reaches {np.abs(pos).max() / 500:.1f} m from the origin; "
+                             "the viewer stores positions in 2 mm steps up to 65.5 m")
+        pos = pos.astype(np.int16)
         uv = np.round(np.clip(t, 0, 1) * 65535).astype(np.uint16)
         idx = inv.reshape(-1).astype(np.uint16 if len(uniq) < 65536 else np.uint32)
         blob = pos.tobytes() + uv.tobytes() + idx.tobytes()
@@ -150,7 +157,11 @@ def main():
               (total["not_scanned_m2"], "gap", "Not scanned"), (walls, "wall", "Wall strips")]
     pct = lambda v: 100 * v / floor if floor else 0
     ceilings = [z["ceiling_height_m"] for z in zones if z["ceiling_height_m"] != "n/a"]
-    ceiling_text = ("Ceilings " + ", ".join(dict.fromkeys(c.replace(" - ", "–") for c in ceilings)) + " m") if ceilings else ""
+    unique = list(dict.fromkeys(c.replace(" - ", "–") for c in ceilings))
+    if len(unique) > 4:  # many zones (a master): give the range
+        values = [float(v) for c in unique for v in re.findall(r"\d+(?:\.\d+)?", c)]
+        unique = [f"{min(values):g}–{max(values):g}"]
+    ceiling_text = ("Ceilings " + ", ".join(unique) + " m") if ceilings else ""
     e = html.escape
 
     meta = "\n".join(f"      <span>{e(k)}</span><b{' class=\"num\"' if num else ''}>{e(v)}</b>" for k, v, num in [
@@ -158,7 +169,7 @@ def main():
         ("Grid", f"{float(grid['cell']):.2f} m", True), ("Units", "metres", False)])
     figures = "\n".join([
         f'    <div class="fig"><span class="label">Floor area</span><span class="v num">{fmt(floor)}<small>m²</small></span>'
-        f'<span class="d">{len(zones)} zone{"s" if len(zones) != 1 else ""} from the Polycam floor plan</span></div>',
+        f'<span class="d">{e(notes.get("floor_note", f"{len(zones)} zone" + ("s" if len(zones) != 1 else "") + " from the Polycam floor plan"))}</span></div>',
         f'    <div class="fig hot"><span class="label">Stock footprint</span><span class="v num">{fmt(total["stock_footprint_m2"])}<small>m²</small></span>'
         f'<span class="d">{pct(total["stock_footprint_m2"]):.0f}% of the floor</span></div>',
         f'    <div class="fig"><span class="label">Free floor</span><span class="v num">{fmt(total["free_floor_m2"])}<small>m²</small></span>'
@@ -176,8 +187,10 @@ def main():
     bullets = lambda items: "\n".join(f"        <li>{e(t)}</li>" for t in items)
 
     zone_geo = json.loads((layout / "zones.json").read_text())
-    zone_geo = {"zones": [{"id": z["id"], "polygon": [[round(x, 2), round(y, 2)] for x, y in z["polygon"]]}
-                          for z in zone_geo["zones"]]}
+    rounded = lambda poly: [[round(x, 2), round(y, 2)] for x, y in poly]
+    zone_geo = {"zones": [{"id": z["id"], "polygon": rounded(z["polygon"])} for z in zone_geo["zones"]],
+                "annotations": [{"label": a["label"], "polygon": rounded(a["polygon"])}
+                                for a in zone_geo.get("annotations", [])]}
     renders = {k: layout / f for k, f in [("top", "render_top.png"), ("sw", "render_cutaway_south_west.png"),
                                           ("ne", "render_cutaway_north_east.png")]}
     page = (HERE / "viewer_template.html").read_text()
@@ -189,6 +202,8 @@ def main():
                                   if textured < materials else "") + f") or the {fmt(point_count)}-point cloud."),
         "__NOTES_SHOWS__": bullets(notes.get("shows", [])), "__NOTES_METHOD__": bullets(notes.get("method", [])),
         "__FOOT__": e(notes.get("foot", "")),
+        "__ZONES_CAPTION__": e(notes.get("zones_caption", "Zones are lettered by size. Polycam labels rooms as if in a "
+                                                          "house (Bedroom, Other), shown in grey for reference.")),
         "__IMG_HEIGHT__": jpeg_data_uri(layout / "stock_height.png", 1800),
         "__IMG_ORTHO__": jpeg_data_uri(layout / "orthophoto.png", 1800),
         "__IMG_TOP__": jpeg_data_uri(renders["top"], 1800),

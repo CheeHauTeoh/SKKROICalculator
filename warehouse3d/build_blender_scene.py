@@ -108,7 +108,7 @@ def textures_from_mtl(obj_path):
                 elif row.startswith("map_Kd") and current:
                     image = mtl.parent / row.split(maxsplit=1)[1].strip()
                     if image.exists():
-                        textures[current] = str(image)
+                        textures[current] = str(image.resolve())
             break
     return textures
 
