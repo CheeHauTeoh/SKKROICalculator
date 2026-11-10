@@ -76,10 +76,11 @@ warehouse and evaluate the space.
    files must print OK.
 3. Rebuild the baseline and confirm it matches before trusting anything:
    - `layout_map.py <restored>/source/2026-10-25.laz --dxf …dxf --csv …csv --out out_base/`
-     should give **391.1 m² floor, 124.9 m² stock, 142.8 m² free, 59.8 m² not
-     scanned, average stack 1.34 m, 167 m³ stock**.
+     should give **391.1 m² floor, 128.2 m² stock, 140.2 m² free, 58.7 m² not
+     scanned, average stack 1.38 m, 177 m³ stock** (figures since the 10 Nov 2026
+     floor fix; before it: 124.9 / 142.8 / 59.8 / 1.34 / 167).
    - `build_layout_planner.py <restored>/source/2026-10-25.obj --layout out_base/ --out out_base/`
-     should give **217 stacks** with all 8 textures.
+     should give **220 stacks** with all 8 textures.
    If the numbers differ, stop and find out why.
 
 ## 4. What we know about the building (baseline facts)
@@ -96,9 +97,9 @@ warehouse and evaluate the space.
 
   | Zone | Polycam label | Floor m² | Stock m² | Free m² | Avg stack m | Ceiling m | Notes |
   |---|---|---|---|---|---|---|---|
-  | A | Bedroom 1 | 177.6 | 67.2 | 65.6 | 1.45 | 5.6 | main hall; deep blocks along the north wall |
-  | B | Bedroom 2 | 96.1 | 19.8 | 40.3 | 1.47 | 5.3 | most open floor |
-  | C | Bedroom 3 | 52.3 | 26.2 | 12.2 | 1.14 | 3.6–4.7 | most crowded (50%), lowest roof |
+  | A | Bedroom 1 | 177.6 | 69.0 | 63.7 | 1.50 | 5.6 | main hall; deep blocks along the north wall |
+  | B | Bedroom 2 | 96.1 | 21.2 | 39.7 | 1.50 | 5.3 | most open floor |
+  | C | Bedroom 3 | 52.3 | 26.3 | 12.1 | 1.14 | 3.6–4.7 | most crowded (50%), lowest roof |
   | D | Bedroom 4 | 25.2 | 7.0 | 13.0 | 0.93 | 4.0 | |
   | E | Other 1 | 21.9 | 1.3 | 0.0 | – | 5.6 | enclosed room, only seen from outside |
   | F | Other 2 | 18.0 | 3.4 | 11.7 | 0.89 | 2.4 | small room with door and window |
@@ -113,7 +114,7 @@ warehouse and evaluate the space.
 - Stock = 0.15–3.3 m above the local floor (`--stock-cap 3.3`). Surfaces rising
   past 3.3 m count as walls or columns, not stock. This suits hand-stacked
   cartons and pallets. Raise it only where there is racking.
-- Planner findings on the baseline: 94 of 217 stacks have no 1.2 m aisle
+- Planner findings on the baseline (before the floor fix, 217 stacks): 94 have no 1.2 m aisle
   beside them (buried behind other stock). Stock fills about 9% of the
   building volume, so height is largely unused.
 - The textures were uploaded renamed in the first session and were matched to
@@ -210,6 +211,14 @@ warehouse and evaluate the space.
   RMS 0.27 m, interior walls in conflict. Treat it as a separate hall until I
   say where it is. Its zone C is a stair space under a 3.3 m ceiling, so its
   "stock" figures are not stock.
+- Measurement check (10 Nov 2026): large stock blocks that hide the floor
+  completely used to be read as floor, so stock counted as free floor. `local_floor`
+  now rejects cells more than 0.35 m above a fitted floor surface. After the fix the
+  floor varies 0.23–0.40 m (5th–95th percentile) per scan. Polycam ceilings match
+  the roof the scan saw to about 0.3 m (zone 1A's roof peaks near 7 m). Plan widths
+  match the cloud's wall faces to about 0.1 m, except scan 02, which tapers
+  4.5 → 3.1 m while Polycam drew a 4.0 m rectangle (about 4 m² too big). Scale is
+  only checkable with a tape measure.
 - Texture images often arrive partially (scan 03: 5 of 10). The scripts match
   what arrived by colour and keep only confident matches (error ≤ 25, at least 15
   better than the runner-up). The rest are coloured from the nearest LiDAR point

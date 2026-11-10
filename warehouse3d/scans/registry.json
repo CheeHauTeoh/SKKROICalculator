@@ -114,15 +114,16 @@
    },
    "summary": {
     "floor_area_m2": 391.1,
-    "stock_footprint_m2": 124.9,
-    "free_floor_m2": 142.8,
-    "not_scanned_m2": 59.8,
-    "stock_cover_pct": 32.0,
-    "stack_height_avg_m": 1.34,
-    "stock_volume_m3": 167.0,
-    "stock_outside_floor_plan_m2": 26.2,
+    "stock_footprint_m2": 128.2,
+    "free_floor_m2": 140.2,
+    "not_scanned_m2": 58.7,
+    "stock_cover_pct": 33.0,
+    "stack_height_avg_m": 1.38,
+    "stock_volume_m3": 177.0,
+    "stock_outside_floor_plan_m2": 26.1,
     "zones": 6,
-    "stacks": 217
+    "stacks": 220,
+    "figures_updated": "2026-11-10: floor under large stock blocks taken from the surrounding floor"
    },
    "notes": "Main building, zones A-F. Floor not level (north-west +0.2-0.3 m). East wall slanted but drawn straight by Polycam. Zone E seen only from outside.",
    "viewer": "https://claude.ai/artifact/GQVJYxTtSuQLP3Ky5MR6ZN"
@@ -226,19 +227,21 @@
    },
    "summary": {
     "floor_area_m2": 75.1,
-    "stock_footprint_m2": 29.9,
+    "stock_footprint_m2": 29.4,
     "free_floor_m2": 20.8,
-    "not_scanned_m2": 6.6,
-    "stock_cover_pct": 40.0,
-    "stack_height_avg_m": 1.49,
-    "stock_volume_m3": 45.0,
-    "stock_outside_floor_plan_m2": 0.3,
+    "not_scanned_m2": 7.1,
+    "stock_cover_pct": 39.0,
+    "stack_height_avg_m": 1.51,
+    "stock_volume_m3": 44.0,
+    "stock_outside_floor_plan_m2": 0.0,
     "zones": 2,
-    "stacks": 42,
+    "stacks": 40,
     "polycam_exterior_m2": 77.5,
-    "polycam_ceiling_m": "3.8-5.6"
+    "polycam_ceiling_m": "3.8-5.6",
+    "figures_updated": "2026-11-10: floor under large stock blocks taken from the surrounding floor",
+    "area_inside_wall_faces_m2": 69.4
    },
-   "notes": "Narrow bay 19.2 x 4.1 m, doorway in the south wall opening to outside, breeze-block band on the west wall. Textures arrived as 2000 px chat images (Polycam originals 4096 px) and were matched to materials by colour (errors 6.6-10.4 vs 62+ for the next best).",
+   "notes": "Narrow bay 19.2 x 4.1 m, doorway in the south wall opening to outside, breeze-block band on the west wall. Textures arrived as 2000 px chat images (Polycam originals 4096 px) and were matched to materials by colour (errors 6.6-10.4 vs 62+ for the next best). Checked 2026-11-10: the bay tapers (wall faces about 4.5 m apart at the north end, 3.1 m at the south end); Polycam drew a 4.0 m rectangle, about 4 m2 too big. Most of its 'not scanned' area is the part of that rectangle beyond the real walls.",
    "viewer": "https://claude.ai/artifact/MyYwhnXDS1e7Jg1NiyNGvn"
   },
   {
@@ -340,17 +343,18 @@
    },
    "summary": {
     "floor_area_m2": 290.6,
-    "stock_footprint_m2": 107.2,
-    "free_floor_m2": 110.1,
-    "not_scanned_m2": 15.9,
-    "stock_cover_pct": 37.0,
-    "stack_height_avg_m": 1.63,
-    "stock_volume_m3": 174.0,
-    "stock_outside_floor_plan_m2": 19.9,
+    "stock_footprint_m2": 114.1,
+    "free_floor_m2": 103.5,
+    "not_scanned_m2": 16.3,
+    "stock_cover_pct": 39.0,
+    "stack_height_avg_m": 1.68,
+    "stock_volume_m3": 191.0,
+    "stock_outside_floor_plan_m2": 19.1,
     "zones": 5,
-    "stacks": 173,
+    "stacks": 175,
     "polycam_exterior_m2": 295.4,
-    "polycam_ceiling_m": "3.3-6.9"
+    "polycam_ceiling_m": "3.3-6.9",
+    "figures_updated": "2026-11-10: floor under large stock blocks taken from the surrounding floor"
    },
    "missing_textures": [
     "Material_2",
@@ -364,7 +368,7 @@
   }
  ],
  "master": {
-  "built": "2026-11-03",
+  "built": "2026-11-10",
   "tool": "build_master.py",
   "viewer": "https://claude.ai/artifact/D6eAeusVoRW4MFBuUYhcvk",
   "placed": {
@@ -383,13 +387,13 @@
    "unplaced_plan_area_m2": 365.7,
    "upper_bound_if_no_overlap_m2": 756.9,
    "all_zones_floor_m2": 756.8,
-   "stock_footprint_m2": 261.7,
-   "free_floor_m2": 271.8,
-   "not_scanned_m2": 80.6,
-   "stock_volume_m3": 384.0,
-   "stack_height_avg_m": 1.47,
+   "stock_footprint_m2": 269.9,
+   "free_floor_m2": 263.3,
+   "not_scanned_m2": 81.5,
+   "stock_volume_m3": 406.0,
+   "stack_height_avg_m": 1.51,
    "polycam_room_volume_m3": 3971.67,
-   "stacks": 448
+   "stacks": 439
   },
   "notes": "Only scan 01 is placed. Scans 02 and 03 are set beside the building (gap 5 m) and captioned 'position not confirmed'; the 756.9 m2 total holds only if they don't overlap scan 01. Zone 3C (stairs, 3.3 m ceiling) reads 65% stock but is probably not stock."
  }

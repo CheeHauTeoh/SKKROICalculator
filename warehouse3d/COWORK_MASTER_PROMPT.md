@@ -147,6 +147,9 @@ python build_viewer.py --scan S/<name>.laz --obj S/<name>.obj --layout O --notes
     with stairs per Polycam. Flag these; don't count them as storage.
   - Polycam straightens walls that aren't square, so some stock lands outside
     the plan. The report shows it as "stock outside floor plan". Mention it.
+  - Polycam can also square a room that tapers: scan 02's bay narrows from
+    4.5 to 3.1 m, but Polycam drew a 4.0 m rectangle. Check plan widths
+    against the wall faces in the cloud.
   - The OBJ is Y up and the LAZ/DXF are Z up. The tools handle this; don't
     re-rotate.
 
@@ -236,7 +239,7 @@ coordinates:
    it, three scans):
    - about 3.5 minutes in total
    - 4.2 million points and 675,000 triangles
-   - 448 movable stacks in the planner
+   - about 440 movable stacks in the planner
    - a 31.6 MB viewer; with `--inline` it's one file of similar size
    - planner and scene `.blend` files of about 45–50 MB each
 

@@ -96,8 +96,12 @@ def grid_index(xy, origin, cell, shape):
     return ij, ok
 
 
-def local_floor(xyz, origin, shape, cell, coarse=0.5, window_m=2.0):
-    """Floor height per cell: low percentile per coarse cell, gaps filled from neighbours."""
+def local_floor(xyz, origin, shape, cell, coarse=0.5, window_m=2.0, max_rise=0.35):
+    """Floor height per cell: low percentile per coarse cell, gaps filled from neighbours.
+
+    Returns the floor and a mask of cells where no floor was seen (hidden under stock
+    or not scanned), whose height was taken from the surrounding floor.
+    """
     factor = int(round(coarse / cell))
     cshape = (int(np.ceil(shape[0] / factor)), int(np.ceil(shape[1] / factor)))
     ij, ok = grid_index(xyz[:, :2], origin, coarse, cshape)
@@ -114,7 +118,23 @@ def local_floor(xyz, origin, shape, cell, coarse=0.5, window_m=2.0):
     # A cell whose lowest points sit well above its neighbours' floor is stock seen from above.
     window = max(3, int(window_m / coarse) | 1)
     ref = ndimage.generic_filter(np.where(np.isnan(floor), np.inf, floor), np.min, size=window)
-    floor[floor > ref + 0.35] = np.nan
+    floor[floor > ref + max_rise] = np.nan
+    # Stock blocks wider than the window hide the floor completely, and their flat tops
+    # pass the test above. Drop cells that rise well above a smooth (quadratic) surface
+    # fitted to the whole floor; it still follows a gently sloping or slightly bent floor.
+    ii, jj = np.nonzero(~np.isnan(floor))
+    if len(ii) > 20:
+        u, v = (ii - ii.mean()) / max(np.ptp(ii), 1), (jj - jj.mean()) / max(np.ptp(jj), 1)
+        terms = np.column_stack((np.ones_like(u), u, v, u * u, u * v, v * v))
+        z = floor[ii, jj]
+        keep = np.ones(len(z), bool)
+        for _ in range(8):
+            coef, *_ = np.linalg.lstsq(terms[keep], z[keep], rcond=None)
+            new = z - terms @ coef < max_rise
+            if (new == keep).all():
+                break
+            keep = new
+        floor[ii[~keep], jj[~keep]] = np.nan
     # Fill gaps with the nearest measured floor, then smooth.
     missing = np.isnan(floor)
     if missing.all():
@@ -122,13 +142,14 @@ def local_floor(xyz, origin, shape, cell, coarse=0.5, window_m=2.0):
     idx = ndimage.distance_transform_edt(missing, return_distances=False, return_indices=True)
     floor = floor[tuple(idx)]
     floor = ndimage.median_filter(floor, size=3)
-    return np.kron(floor, np.ones((factor, factor)))[: shape[0], : shape[1]]
+    upsample = lambda a: np.kron(a, np.ones((factor, factor), a.dtype))[: shape[0], : shape[1]]
+    return upsample(floor), upsample(missing)
 
 
 def build_grids(xyz, rgb, cell, stock_cap, min_points):
     origin = xyz[:, :2].min(axis=0) - cell
     shape = tuple(np.ceil((xyz[:, :2].max(axis=0) - origin) / cell).astype(int) + 2)
-    floor = local_floor(xyz, origin, shape, cell)
+    floor, floor_unseen = local_floor(xyz, origin, shape, cell)
     ij, ok = grid_index(xyz[:, :2], origin, cell, shape)
     ij, xyz, rgb = ij[ok], xyz[ok], rgb[ok]
     h = xyz[:, 2] - floor[ij[:, 0], ij[:, 1]]
@@ -166,7 +187,7 @@ def build_grids(xyz, rgb, cell, stock_cap, min_points):
     stock = (top >= 0.15) & ~structure
     stock = ndimage.binary_opening(stock)  # drop isolated specks
     free = (floor_count >= min_points) & ~stock & ~structure
-    return {"origin": origin, "cell": cell, "floor": floor, "top": np.where(stock, top, 0.0),
+    return {"origin": origin, "cell": cell, "floor": floor, "floor_unseen": floor_unseen, "top": np.where(stock, top, 0.0),
             "stock": stock, "free": free, "structure": structure, "colour": colour, "seen": seen}
 
 
@@ -361,6 +382,8 @@ def write_report(out, rows, totals, args):
         f"past {args.stock_cap} m) are left out of stock, free floor and not scanned.",
         "- Stock volume is the space under the top of each stack (gaps inside stacks included).",
         "- Phone LiDAR misses spots hidden behind tall stacks; those count as not scanned.",
+        f"- {totals['stock_on_unseen_floor_m2']} m² of stock stands where the floor under it was never seen; "
+        "its height is measured from the surrounding floor.",
         f"- {totals['stock_outside_floor_plan_m2']} m² of stock-height objects sit outside Polycam's walls (faded on the maps); "
         "the floor plan simplifies walls that are not square.",
         "- Polycam's room labels (Bedroom etc.) are automatic and wrong for a warehouse; "
@@ -420,6 +443,7 @@ def main():
         "stack_height_avg_m": round(float(heights.mean()), 2) if len(heights) else 0.0,
         "stock_volume_m3": round(sum(r["stock_volume_m3"] for r in rows), 0),
         "stock_outside_floor_plan_m2": round(float((grids["stock"] & ~inside).sum() * area), 1),
+        "stock_on_unseen_floor_m2": round(float((grids["stock"] & inside & grids["floor_unseen"]).sum() * area), 1),
     }
 
     plot_orthophoto(out / "orthophoto.png", grids, walls, zones, annotations)
